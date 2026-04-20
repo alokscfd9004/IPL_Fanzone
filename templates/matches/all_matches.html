@@ -1,0 +1,75 @@
+{% extends "base/base.html" %}
+{% block title %}All Matches — IPL 2025{% endblock %}
+{% block extra_head %}
+<style>
+.am-layout{display:grid;grid-template-columns:220px 1fr;min-height:calc(100vh - 130px);}
+.am-sidebar{background:linear-gradient(180deg,#0f2456,#1a3a7c);padding:1.25rem 0.5rem;}
+.snav-link{display:flex;align-items:center;gap:0.75rem;padding:0.65rem 1rem;color:rgba(255,255,255,0.6);text-decoration:none;font-size:0.85rem;font-weight:500;border-radius:8px;transition:all 0.2s;margin-bottom:0.1rem;}
+.snav-link:hover,.snav-link.active{color:#fff;background:rgba(255,255,255,0.08);}
+.snav-icon{font-size:1rem;width:22px;text-align:center;}
+.am-content{padding:1.25rem;background:#eef2f7;}
+.match-card{background:#fff;border-radius:12px;border:1px solid #e2e8f0;padding:1.25rem;cursor:pointer;transition:all 0.25s;text-decoration:none;color:inherit;display:block;box-shadow:0 2px 8px rgba(0,0,0,0.05);}
+.match-card:hover{transform:translateY(-4px);box-shadow:0 10px 30px rgba(0,0,0,0.1);border-color:#1a3a7c;}
+.match-card.live-card{border-top:3px solid #e63946;border-left:3px solid #e63946;}
+.mc-teams{display:flex;align-items:center;justify-content:space-between;gap:0.75rem;margin-bottom:1rem;}
+.mc-team{text-align:center;flex:1;}
+.mc-emoji{font-size:2.2rem;display:block;margin-bottom:0.25rem;}
+.mc-short{font-family:'Teko',sans-serif;font-size:1.5rem;font-weight:600;letter-spacing:1px;color:#0f2456;}
+.mc-score{font-size:0.95rem;font-weight:700;color:#d4af37;font-family:'Barlow Condensed',sans-serif;}
+.mc-vs{font-family:'Teko',sans-serif;font-size:1.4rem;color:#cbd5e0;}
+.mc-footer{border-top:1px solid #f0f4f8;padding-top:0.75rem;display:flex;justify-content:space-between;align-items:center;font-size:0.78rem;color:#9ca3af;}
+.status-live{display:inline-flex;align-items:center;gap:4px;background:#e63946;color:#fff;font-size:0.68rem;font-weight:800;letter-spacing:1px;padding:2px 8px;border-radius:12px;text-transform:uppercase;animation:pulse-red 1.5s infinite;}
+.status-upcoming{background:rgba(26,58,124,0.08);color:#1a3a7c;font-size:0.68rem;font-weight:700;padding:2px 8px;border-radius:12px;border:1px solid rgba(26,58,124,0.2);}
+.status-completed{background:#f0f4f8;color:#9ca3af;font-size:0.68rem;font-weight:700;padding:2px 8px;border-radius:12px;}
+@keyframes pulse-red{0%,100%{box-shadow:0 0 0 0 rgba(230,57,70,0.4)}50%{box-shadow:0 0 0 6px rgba(230,57,70,0)}}
+.matches-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem;margin-bottom:2rem;}
+.section-hdr{display:flex;align-items:center;gap:0.75rem;margin-bottom:1rem;}
+.section-hdr-title{font-family:'Teko',sans-serif;font-size:1.5rem;font-weight:600;letter-spacing:1px;color:#0f2456;}
+</style>
+{% endblock %}
+{% block content %}
+<div class="am-layout">
+  <div class="am-sidebar">
+    <a href="/" class="snav-link"><span class="snav-icon">🏠</span>Home</a>
+    <a href="/matches/" class="snav-link active"><span class="snav-icon">🏏</span>All Matches</a>
+    <a href="/scorecard/" class="snav-link"><span class="snav-icon">📊</span>Scorecard</a>
+    <a href="/history/" class="snav-link"><span class="snav-icon">📈</span>Analysis</a>
+    <a href="/jarvis/" class="snav-link"><span class="snav-icon">🤖</span>Jarvis AI</a>
+  </div>
+  <div class="am-content">
+    {% if live %}
+    <div class="section-hdr"><div class="section-hdr-title"><span class="status-live">LIVE</span> Live Matches</div></div>
+    <div class="matches-grid">
+      {% for m in live %}
+      <a href="/match/{{ m.id }}/" class="match-card live-card">
+        <div class="mc-teams"><div class="mc-team"><span class="mc-emoji">{{ m.team1.logo_emoji }}</span><div class="mc-short">{{ m.team1.short_name }}</div><div class="mc-score">{{ m.team1_score|default:"—" }}</div></div><div class="mc-vs">VS</div><div class="mc-team"><span class="mc-emoji">{{ m.team2.logo_emoji }}</span><div class="mc-short">{{ m.team2.short_name }}</div><div class="mc-score">{{ m.team2_score|default:"YTB" }}</div></div></div>
+        <div class="mc-footer"><span>📍 {{ m.venue|truncatechars:30 }}</span><span class="status-live">LIVE</span></div>
+      </a>
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% if upcoming %}
+    <div class="section-hdr"><div class="section-hdr-title">📅 Upcoming</div></div>
+    <div class="matches-grid">
+      {% for m in upcoming %}
+      <a href="/match/{{ m.id }}/" class="match-card">
+        <div class="mc-teams"><div class="mc-team"><span class="mc-emoji">{{ m.team1.logo_emoji }}</span><div class="mc-short">{{ m.team1.short_name }}</div></div><div class="mc-vs">VS</div><div class="mc-team"><span class="mc-emoji">{{ m.team2.logo_emoji }}</span><div class="mc-short">{{ m.team2.short_name }}</div></div></div>
+        <div class="mc-footer"><span>{{ m.match_date|date:"d M, g:i A" }}</span><span class="status-upcoming">UPCOMING</span></div>
+      </a>
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% if completed %}
+    <div class="section-hdr"><div class="section-hdr-title">✅ Completed</div></div>
+    <div class="matches-grid">
+      {% for m in completed %}
+      <a href="/match/{{ m.id }}/" class="match-card">
+        <div class="mc-teams"><div class="mc-team"><span class="mc-emoji">{{ m.team1.logo_emoji }}</span><div class="mc-short">{{ m.team1.short_name }}</div><div class="mc-score">{{ m.team1_score }}</div></div><div class="mc-vs">VS</div><div class="mc-team"><span class="mc-emoji">{{ m.team2.logo_emoji }}</span><div class="mc-short">{{ m.team2.short_name }}</div><div class="mc-score">{{ m.team2_score }}</div></div></div>
+        <div class="mc-footer"><span style="color:#d4af37;">{{ m.result|truncatechars:38 }}</span><span class="status-completed">DONE</span></div>
+      </a>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

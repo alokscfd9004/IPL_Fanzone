@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+{% load static %}
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}IPL FanZone 2025{% endblock %}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Teko:wght@400;500;600;700&family=Barlow:wght@400;500;600;700;800&family=Barlow+Condensed:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'css/style.css' %}">
+<link href="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" rel="stylesheet">
+<style>
+:root {
+  --ipl-blue: #1a3a7c;
+  --ipl-blue-dark: #0f2456;
+  --ipl-blue-light: #2455a8;
+  --ipl-gold: #d4af37;
+  --ipl-gold-bright: #f5c842;
+  --ipl-red: #e63946;
+  --ipl-cyan: #00b4d8;
+  --bg: #f0f4f8;
+  --bg-white: #ffffff;
+  --bg-card: #ffffff;
+  --text: #1a1a2e;
+  --text-dim: #6b7280;
+  --text-white: #ffffff;
+  --border: #e2e8f0;
+  --shadow: 0 2px 12px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
+  --radius: 12px;
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+body{
+  font-family:'Barlow',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  min-height:100vh;
+}
+
+/* ── TOP HEADER ── */
+.top-header{
+  background:linear-gradient(135deg,var(--ipl-blue-dark) 0%,var(--ipl-blue) 50%,var(--ipl-blue-light) 100%);
+  padding:0;
+  position:relative;
+  overflow:hidden;
+}
+
+.top-header::before{
+  content:'';
+  position:absolute;inset:0;
+  background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Ccircle cx='30' cy='30' r='20'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  pointer-events:none;
+}
+
+.header-inner{
+  max-width:1440px;margin:0 auto;
+  display:flex;align-items:center;
+  padding:0 1.5rem;height:72px;
+  position:relative;z-index:1;
+}
+
+.logo-section{
+  display:flex;align-items:center;gap:1rem;
+  flex-shrink:0;margin-right:2rem;
+}
+
+.logo-badge{
+  width:52px;height:52px;
+  background:var(--ipl-gold);
+  border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.4rem;font-weight:900;color:var(--ipl-blue-dark);
+  font-family:'Teko',sans-serif;letter-spacing:1px;
+  box-shadow:0 0 20px rgba(212,175,55,0.4);
+}
+
+.logo-text{
+  font-family:'Teko',sans-serif;
+  line-height:1;
+}
+
+.logo-text .ipl{font-size:1.5rem;font-weight:700;color:var(--ipl-gold);letter-spacing:3px;}
+.logo-text .sub{font-size:0.7rem;color:rgba(255,255,255,0.6);letter-spacing:2px;text-transform:uppercase;}
+
+nav{flex:1;}
+
+nav ul{
+  display:flex;list-style:none;gap:0.25rem;
+}
+
+nav a{
+  display:flex;align-items:center;gap:0.4rem;
+  padding:0.5rem 1rem;
+  color:rgba(255,255,255,0.75);
+  text-decoration:none;
+  font-size:0.88rem;font-weight:600;
+  letter-spacing:0.5px;
+  border-radius:8px;
+  transition:all 0.2s;
+  text-transform:uppercase;
+}
+
+nav a:hover,nav a.active{
+  color:#fff;
+  background:rgba(255,255,255,0.12);
+}
+
+nav a .nav-icon{font-size:1rem;}
+
+.header-right{
+  display:flex;align-items:center;gap:0.75rem;
+  margin-left:auto;
+}
+
+.live-pill{
+  display:flex;align-items:center;gap:5px;
+  background:var(--ipl-red);
+  color:white;
+  font-size:0.72rem;font-weight:800;
+  letter-spacing:1.5px;padding:4px 10px;
+  border-radius:20px;text-transform:uppercase;
+  animation:pulse-pill 1.5s infinite;
+}
+
+.live-pill::before{
+  content:'';width:6px;height:6px;background:#fff;
+  border-radius:50%;animation:blink 1s infinite;
+}
+
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.2}}
+@keyframes pulse-pill{0%,100%{box-shadow:0 0 0 0 rgba(230,57,70,0.5)}50%{box-shadow:0 0 0 8px rgba(230,57,70,0)}}
+
+.btn-join{
+  background:linear-gradient(135deg,var(--ipl-gold),#e8a000);
+  color:var(--ipl-blue-dark);
+  font-weight:800;font-size:0.82rem;letter-spacing:1px;
+  padding:0.45rem 1.1rem;border-radius:20px;
+  border:none;cursor:pointer;text-decoration:none;
+  text-transform:uppercase;transition:all 0.2s;
+}
+
+.btn-join:hover{transform:scale(1.04);filter:brightness(1.1);}
+
+/* ── SUB NAV (Breadcrumb style) ── */
+.sub-nav{
+  background:var(--ipl-blue);
+  padding:0 1.5rem;
+  border-bottom:2px solid var(--ipl-gold);
+}
+
+.sub-nav-inner{
+  max-width:1440px;margin:0 auto;
+  display:flex;gap:0;
+}
+
+.sub-nav a{
+  display:block;
+  padding:0.55rem 1.25rem;
+  color:rgba(255,255,255,0.65);
+  text-decoration:none;
+  font-size:0.82rem;font-weight:600;
+  letter-spacing:0.5px;text-transform:uppercase;
+  border-bottom:3px solid transparent;
+  transition:all 0.2s;
+}
+
+.sub-nav a:hover,.sub-nav a.active{
+  color:var(--ipl-gold);
+  border-bottom-color:var(--ipl-gold);
+}
+
+/* ── MAIN ── */
+main{position:relative;min-height:calc(100vh - 130px);}
+
+/* ── LEFT SIDEBAR ── */
+.page-layout{
+  max-width:1440px;margin:0 auto;
+  display:grid;grid-template-columns:220px 1fr;
+  gap:0;min-height:calc(100vh - 130px);
+}
+
+.left-sidebar{
+  background:var(--ipl-blue-dark);
+  padding:1.5rem 0;
+  min-height:100%;
+}
+
+.sidebar-season{
+  padding:1rem 1.25rem;
+  text-align:center;
+  border-bottom:1px solid rgba(255,255,255,0.08);
+  margin-bottom:1rem;
+}
+
+.sidebar-year{
+  font-family:'Teko',sans-serif;
+  font-size:4rem;font-weight:700;
+  color:var(--ipl-gold);
+  line-height:1;
+  text-shadow:0 0 30px rgba(212,175,55,0.3);
+}
+
+.sidebar-year-label{
+  font-size:0.75rem;color:rgba(255,255,255,0.5);
+  letter-spacing:2px;text-transform:uppercase;
+}
+
+.sidebar-links{padding:0 0.5rem;}
+
+.sidebar-link{
+  display:flex;align-items:center;gap:0.75rem;
+  padding:0.65rem 0.75rem;
+  color:rgba(255,255,255,0.6);
+  text-decoration:none;
+  font-size:0.88rem;font-weight:500;
+  border-radius:8px;
+  transition:all 0.2s;
+  margin-bottom:0.15rem;
+}
+
+.sidebar-link:hover,.sidebar-link.active{
+  color:#fff;background:rgba(255,255,255,0.08);
+}
+
+.sidebar-link .sl-icon{font-size:1rem;width:20px;text-align:center;}
+
+.sidebar-divider{
+  margin:1rem 0.75rem;
+  border:none;border-top:1px solid rgba(255,255,255,0.06);
+}
+
+.sidebar-section-title{
+  padding:0 0.75rem 0.4rem;
+  font-size:0.68rem;font-weight:700;letter-spacing:2px;
+  text-transform:uppercase;color:rgba(255,255,255,0.3);
+}
+
+/* ── CONTENT AREA ── */
+.content-area{
+  padding:1.5rem;
+  background:var(--bg);
+}
+
+/* ── CARDS ── */
+.card{
+  background:var(--bg-card);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  overflow:hidden;
+}
+
+.card-header{
+  padding:0.85rem 1.25rem;
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:1rem;font-weight:700;
+  letter-spacing:0.5px;text-transform:uppercase;
+  color:var(--text);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+}
+
+/* ── STAT BOXES ── */
+.stat-box{
+  background:var(--bg-white);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:1rem 1.25rem;
+  display:flex;flex-direction:column;align-items:center;
+  text-align:center;gap:0.35rem;
+  box-shadow:var(--shadow);
+  transition:all 0.25s;
+}
+
+.stat-box:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg);}
+
+.stat-icon{font-size:1.6rem;}
+
+.stat-num{
+  font-family:'Teko',sans-serif;
+  font-size:2.2rem;font-weight:700;
+  color:var(--ipl-blue);
+  line-height:1;
+}
+
+.stat-label{
+  font-size:0.72rem;font-weight:600;
+  letter-spacing:0.5px;text-transform:uppercase;
+  color:var(--text-dim);
+}
+
+/* ── CHAMPION BANNER ── */
+.champion-card{
+  background:linear-gradient(135deg,var(--ipl-blue-dark),var(--ipl-blue));
+  border-radius:var(--radius);
+  padding:1.25rem 1.5rem;
+  display:flex;align-items:center;gap:1.5rem;
+  color:white;
+  box-shadow:var(--shadow-lg);
+}
+
+.champion-badge{
+  background:rgba(212,175,55,0.15);
+  border:1px solid var(--ipl-gold);
+  border-radius:8px;
+  padding:0.4rem 0.75rem;
+  font-size:0.7rem;font-weight:700;letter-spacing:1px;
+  text-transform:uppercase;color:var(--ipl-gold);
+}
+
+.champion-team-logo{
+  font-size:3rem;
+}
+
+.champion-team-name{
+  font-family:'Teko',sans-serif;
+  font-size:2rem;font-weight:600;
+  letter-spacing:1px;
+}
+
+/* ── POINTS TABLE ── */
+.points-table{width:100%;border-collapse:collapse;font-size:0.85rem;}
+
+.points-table thead tr{background:var(--ipl-blue);}
+.points-table thead th{
+  padding:0.6rem 0.75rem;
+  color:white;font-weight:700;
+  font-size:0.78rem;letter-spacing:0.5px;text-transform:uppercase;
+  text-align:left;
+}
+
+.points-table thead th:not(:first-child){text-align:center;}
+
+.points-table tbody tr{border-bottom:1px solid var(--border);transition:background 0.15s;}
+.points-table tbody tr:hover{background:rgba(26,58,124,0.04);}
+.points-table tbody tr:nth-child(1),.points-table tbody tr:nth-child(2),
+.points-table tbody tr:nth-child(3),.points-table tbody tr:nth-child(4){
+  background:rgba(26,58,124,0.03);
+}
+
+.points-table td{padding:0.65rem 0.75rem;vertical-align:middle;}
+.points-table td:not(:first-child):not(:nth-child(2)){text-align:center;font-family:'Barlow Condensed',sans-serif;font-weight:600;}
+
+.team-logo-cell{
+  display:flex;align-items:center;gap:0.5rem;
+}
+
+.team-logo-thumb{
+  width:28px;height:28px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:0.9rem;
+  background:var(--bg);border:1px solid var(--border);
+  flex-shrink:0;
+}
+
+.pts-badge{
+  display:inline-block;
+  background:var(--ipl-blue);color:white;
+  font-weight:800;font-size:0.82rem;
+  padding:2px 10px;border-radius:12px;
+  min-width:36px;text-align:center;
+}
+
+/* ── PLAYER CARD ── */
+.player-card{
+  background:var(--bg-card);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  overflow:hidden;
+  position:relative;
+}
+
+.player-card-header{
+  background:linear-gradient(135deg,var(--ipl-blue-dark),var(--ipl-blue));
+  padding:0.75rem 1rem;
+  display:flex;justify-content:space-between;align-items:center;
+}
+
+.player-card-title{
+  font-size:0.75rem;font-weight:700;letter-spacing:1px;
+  text-transform:uppercase;color:rgba(255,255,255,0.7);
+}
+
+.player-card-badge{
+  width:28px;height:28px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1rem;
+  background:rgba(255,255,255,0.1);
+}
+
+.player-card-body{
+  padding:1rem;
+  display:flex;gap:1rem;align-items:flex-start;
+}
+
+.player-avatar{
+  width:70px;height:70px;border-radius:50%;
+  background:linear-gradient(135deg,var(--ipl-blue),var(--ipl-blue-light));
+  display:flex;align-items:center;justify-content:center;
+  font-size:2rem;flex-shrink:0;
+  border:3px solid var(--border);
+}
+
+.player-info{}
+
+.player-stat-val{
+  font-family:'Teko',sans-serif;
+  font-size:2rem;font-weight:700;
+  color:var(--ipl-blue);line-height:1;
+}
+
+.player-stat-label{
+  font-size:0.72rem;color:var(--text-dim);font-weight:600;
+  letter-spacing:0.5px;text-transform:uppercase;
+  margin-bottom:0.25rem;
+}
+
+.player-name{
+  font-size:1rem;font-weight:700;color:var(--ipl-blue);
+}
+
+.player-team{
+  font-size:0.8rem;color:var(--text-dim);font-weight:500;
+}
+
+/* ── FOOTER ── */
+footer{
+  background:var(--ipl-blue-dark);
+  color:rgba(255,255,255,0.5);
+  text-align:center;padding:1.5rem;
+  font-size:0.8rem;
+}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:#f0f4f8}
+::-webkit-scrollbar-thumb{background:var(--ipl-blue);border-radius:3px}
+
+/* ── TOAST ── */
+#toast-container{position:fixed;bottom:2rem;right:2rem;z-index:9999;display:flex;flex-direction:column;gap:0.5rem;}
+.toast{background:var(--ipl-blue);color:white;padding:0.75rem 1.25rem;border-radius:10px;font-size:0.88rem;font-weight:600;box-shadow:var(--shadow-lg);animation:slide-in 0.3s ease;}
+@keyframes slide-in{from{transform:translateX(100px);opacity:0}to{transform:translateX(0);opacity:1}}
+
+/* ── MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);backdrop-filter:blur(8px);z-index:2000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.3s;}
+.modal-overlay.open{opacity:1;pointer-events:all;}
+.modal{background:#fff;border-radius:16px;padding:2rem;width:90%;max-width:400px;transform:scale(0.9);transition:transform 0.3s;box-shadow:var(--shadow-lg);}
+.modal-overlay.open .modal{transform:scale(1);}
+.modal h2{font-family:'Teko',sans-serif;font-size:1.8rem;letter-spacing:2px;color:var(--ipl-blue);margin-bottom:1.25rem;}
+.form-group{margin-bottom:1rem;}
+.form-group label{display:block;font-size:0.78rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);margin-bottom:0.4rem;}
+.form-group input,.form-group select{width:100%;border:1.5px solid var(--border);border-radius:8px;padding:0.65rem 0.9rem;font-family:'Barlow',sans-serif;font-size:0.95rem;outline:none;transition:border-color 0.2s;}
+.form-group input:focus,.form-group select:focus{border-color:var(--ipl-blue);}
+.btn-primary{width:100%;background:var(--ipl-blue);color:white;font-family:'Barlow',sans-serif;font-size:1rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:0.75rem;border:none;border-radius:8px;cursor:pointer;transition:all 0.2s;}
+.btn-primary:hover{background:var(--ipl-blue-light);}
+
+/* ── UTILS ── */
+.grid-2{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem;}
+.grid-3{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1rem;}
+.grid-4{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:0.75rem;}
+.flex{display:flex;}.flex-1{flex:1;}.gap-1{gap:0.75rem;}.gap-2{gap:1.5rem;}
+.mb-1{margin-bottom:0.75rem;}.mb-2{margin-bottom:1.5rem;}
+.text-center{text-align:center;}
+.text-gold{color:var(--ipl-gold);}
+.text-blue{color:var(--ipl-blue);}
+.text-dim{color:var(--text-dim);}
+.fw-700{font-weight:700;}
+.section-title{font-family:'Teko',sans-serif;font-size:1.6rem;font-weight:600;letter-spacing:1px;color:var(--ipl-blue);margin-bottom:0.2rem;}
+.section-sub{font-size:0.8rem;color:var(--text-dim);letter-spacing:0.5px;text-transform:uppercase;margin-bottom:1rem;}
+/* ── GLOBAL INPUT STYLES ── */
+input, textarea, select {
+  color: white !important;
+  background-color: rgba(15, 36, 86, 0.9) !important;
+  border: 1px solid var(--ipl-gold) !important;
+}
+input::placeholder, textarea::placeholder {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+</style>
+{% block extra_head %}{% endblock %}
+</head>
+<body>
+{% csrf_token %}
+
+<!-- TOP HEADER -->
+<header class="top-header">
+  <div class="header-inner">
+    <div class="logo-section">
+      <div class="logo-badge">IPL</div>
+      <div class="logo-text">
+        <div class="ipl">FANZONE</div>
+        <div class="sub">Official Fan Hub</div>
+      </div>
+    </div>
+
+    <nav>
+      <ul>
+        <li><a href="/" class="{% if request.path == '/' %}active{% endif %}"><span class="nav-icon">🏠</span>Home</a></li>
+        <li><a href="/matches/" class="{% if '/matches' in request.path %}active{% endif %}"><span class="nav-icon">🏏</span>Matches</a></li>
+        <li><a href="/scorecard/" class="{% if '/scorecard' in request.path %}active{% endif %}"><span class="nav-icon">📊</span>Live Score</a></li>
+        <li><a href="/history/" class="{% if '/history' in request.path %}active{% endif %}"><span class="nav-icon">📈</span>Analysis</a></li>
+        <li><a href="/jarvis/" class="{% if '/jarvis' in request.path %}active{% endif %}"><span class="nav-icon">🤖</span>Jarvis AI</a></li>
+      </ul>
+    </nav>
+
+    <div class="header-right">
+      <span class="live-pill" id="live-count-pill">LIVE</span>
+      <span id="nav-user" style="color:rgba(255,255,255,0.8);font-size:0.85rem;font-weight:600;"></span>
+      <button class="btn-join" onclick="openJoin()">Join Fan Zone</button>
+    </div>
+  </div>
+</header>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="join-modal">
+  <div class="modal">
+    <h2>🏏 Join Fan Zone</h2>
+    <div class="form-group">
+      <label>Your Fan Name</label>
+      <input type="text" id="modal-name" placeholder="e.g. MI_Legend_99" maxlength="25">
+    </div>
+    <div class="form-group">
+      <label>Favourite Team</label>
+      <select id="modal-team">
+        <option value="">Select team...</option>
+        <option value="MI">Mumbai Indians 🔵</option>
+        <option value="CSK">Chennai Super Kings 🦁</option>
+        <option value="RCB">Royal Challengers Bengaluru 🦅</option>
+        <option value="KKR">Kolkata Knight Riders ⚡</option>
+        <option value="SRH">Sunrisers Hyderabad 🌟</option>
+        <option value="RR">Rajasthan Royals 💎</option>
+        <option value="PBKS">Punjab Kings 👑</option>
+        <option value="DC">Delhi Capitals 🦅</option>
+        <option value="GT">Gujarat Titans 🦁</option>
+        <option value="LSG">Lucknow Super Giants 🌊</option>
+      </select>
+    </div>
+    <button class="btn-primary" onclick="saveJoin()">Enter Fan Zone 🔥</button>
+    <div id="join-modal-bg" onclick="closeJoin()" style="position:absolute;inset:0;z-index:-1;"></div>
+  </div>
+</div>
+
+<main>{% block content %}{% endblock %}</main>
+
+<footer>
+  <strong style="color:var(--ipl-gold)">IPL FANZONE 2025</strong> &nbsp;·&nbsp;
+  Powered by CricAPI + Cricbuzz + Groq AI &nbsp;·&nbsp;
+  Data: Kaggle IPL Dataset 2008–2025
+</footer>
+
+<div id="toast-container"></div>
+
+<script>
+window.FZ = {
+  username: localStorage.getItem('fz_username') || '',
+  team: localStorage.getItem('fz_team') || '',
+};
+
+function updateNavUser() {
+  const el = document.getElementById('nav-user');
+  const btn = document.querySelector('.btn-join');
+  if (window.FZ.username) {
+    el.textContent = '👤 ' + window.FZ.username;
+    if (btn) btn.style.display = 'none';
+  }
+}
+updateNavUser();
+
+function openJoin() {
+  document.getElementById('join-modal').classList.add('open');
+  document.getElementById('modal-name').focus();
+}
+
+function closeJoin() {
+  document.getElementById('join-modal').classList.remove('open');
+}
+
+document.getElementById('join-modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('join-modal')) closeJoin();
+});
+
+async function saveJoin() {
+  const username = document.getElementById('modal-name').value.trim();
+  const team = document.getElementById('modal-team').value;
+  if (!username) { showToast('Please enter a username! 🏏'); return; }
+  window.FZ.username = username; window.FZ.team = team;
+  localStorage.setItem('fz_username', username);
+  localStorage.setItem('fz_team', team);
+  updateNavUser();
+  closeJoin();
+  showToast('Welcome, ' + username + '! 🔥');
+  // Save to Jarvis memory
+  try {
+    await fetch('/jarvis/memory/', {
+      method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':getCookie('csrftoken')},
+      body: JSON.stringify({username, fav_team: team})
+    });
+  } catch(e){}
+}
+
+function showToast(msg) {
+  const el = document.createElement('div');
+  el.className = 'toast'; el.textContent = msg;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(() => el.remove(), 3000);
+}
+
+function getCookie(name) {
+  let v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
+  return v ? v[2] : '';
+}
+
+if (!window.FZ.username) setTimeout(openJoin, 2000);
+</script>
+<script src="{% static 'js/main.js' %}"></script>
+<script src="{% static 'js/animation.js' %}"></script>
+<script src="{% static 'js/chat.js' %}"></script>
+{% block extra_scripts %}{% endblock %}
+</body>
+</html>

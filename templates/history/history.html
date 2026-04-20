@@ -1,0 +1,760 @@
+{% extends "base/base.html" %}
+{% block title %}IPL Analysis {{ season }}{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+/* ── LAYOUT ── */
+.history-layout{
+  display:grid;grid-template-columns:220px 1fr;
+  min-height:calc(100vh - 130px);
+}
+
+/* ── LEFT SIDEBAR (IPL style) ── */
+.ipl-sidebar{
+  background:linear-gradient(180deg,#0f2456 0%,#1a3a7c 100%);
+  padding:0;display:flex;flex-direction:column;
+}
+
+.sidebar-top{
+  padding:1.5rem 1rem;text-align:center;
+  border-bottom:1px solid rgba(255,255,255,0.08);
+}
+
+.sidebar-year-big{
+  font-family:'Teko',sans-serif;font-size:5rem;
+  font-weight:700;color:#d4af37;line-height:1;
+  text-shadow:0 0 30px rgba(212,175,55,0.3);
+}
+
+.sidebar-year-lbl{
+  font-size:0.68rem;font-weight:700;letter-spacing:3px;
+  text-transform:uppercase;color:rgba(255,255,255,0.45);
+}
+
+.sidebar-nav{padding:0.75rem 0.5rem;flex:1;}
+
+.snav-link{
+  display:flex;align-items:center;gap:0.75rem;
+  padding:0.65rem 1rem;
+  color:rgba(255,255,255,0.6);
+  text-decoration:none;font-size:0.85rem;font-weight:500;
+  border-radius:8px;transition:all 0.2s;margin-bottom:0.1rem;
+}
+
+.snav-link:hover,.snav-link.active{
+  color:#fff;background:rgba(255,255,255,0.08);
+}
+
+.snav-icon{font-size:1rem;width:22px;text-align:center;}
+
+.sidebar-social{
+  padding:1rem;border-top:1px solid rgba(255,255,255,0.06);
+}
+
+.social-title{
+  font-size:0.65rem;font-weight:700;letter-spacing:2px;
+  text-transform:uppercase;color:rgba(255,255,255,0.3);
+  margin-bottom:0.6rem;padding:0 0.25rem;
+}
+
+.social-link{
+  display:flex;align-items:center;gap:0.6rem;
+  padding:0.4rem 0.25rem;
+  color:rgba(255,255,255,0.55);
+  text-decoration:none;font-size:0.8rem;
+  border-radius:6px;transition:all 0.15s;
+}
+
+.social-link:hover{color:#fff;}
+.social-icon{font-size:1rem;width:20px;text-align:center;}
+
+.sidebar-footer{
+  padding:0.75rem 1rem;
+  border-top:1px solid rgba(255,255,255,0.06);
+  font-size:0.68rem;color:rgba(255,255,255,0.3);
+  text-align:center;line-height:1.6;
+}
+
+.sidebar-footer span{color:#d4af37;font-weight:700;}
+
+/* ── RIGHT CONTENT ── */
+.history-content{
+  padding:1.25rem;
+  background:#eef2f7;
+  overflow-y:auto;
+}
+
+/* ── SEASON SELECTOR BANNER ── */
+.season-selector-bar{
+  background:#fff;
+  border-radius:10px;
+  padding:1rem 1.25rem;
+  display:flex;align-items:center;justify-content:space-between;
+  box-shadow:0 2px 8px rgba(0,0,0,0.06);
+  margin-bottom:1.25rem;
+  flex-wrap:wrap;gap:0.75rem;
+}
+
+.season-title{
+  font-family:'Teko',sans-serif;
+  font-size:1.8rem;font-weight:600;
+  letter-spacing:2px;color:#0f2456;
+}
+
+.season-select-wrap{display:flex;align-items:center;gap:0.75rem;}
+
+.season-select-label{
+  font-size:0.78rem;font-weight:700;letter-spacing:1px;
+  text-transform:uppercase;color:#6b7280;
+}
+
+.season-select{
+  border:1.5px solid #1a3a7c;border-radius:8px;
+  padding:0.5rem 0.85rem;font-family:'Barlow',sans-serif;
+  font-size:0.9rem;font-weight:600;color:#0f2456;
+  background:#fff;cursor:pointer;outline:none;
+}
+
+/* ── CHAMPION BANNER ── */
+.champ-runner-row{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:1rem;margin-bottom:1.25rem;
+}
+
+.champ-box{
+  background:#fff;border-radius:10px;
+  padding:1.25rem 1.5rem;
+  display:flex;align-items:center;gap:1rem;
+  box-shadow:0 2px 8px rgba(0,0,0,0.06);
+  border-left:4px solid #d4af37;
+}
+
+.champ-box.runner{border-left-color:#e63946;}
+
+.champ-logo-big{font-size:3.5rem;line-height:1;}
+
+.champ-label{
+  font-size:0.72rem;font-weight:700;letter-spacing:1px;
+  text-transform:uppercase;color:#6b7280;margin-bottom:0.15rem;
+}
+
+.champ-team-name{
+  font-family:'Teko',sans-serif;
+  font-size:1.8rem;font-weight:600;letter-spacing:1px;color:#0f2456;
+  line-height:1;
+}
+
+/* ── STATS ROW ── */
+.stats-row{
+  display:grid;
+  grid-template-columns:repeat(7,1fr);
+  gap:0.75rem;margin-bottom:1.25rem;
+}
+
+.stat-mini{
+  background:#fff;border-radius:10px;
+  padding:0.85rem 0.6rem;text-align:center;
+  box-shadow:0 2px 8px rgba(0,0,0,0.05);
+  transition:all 0.2s;cursor:default;
+}
+
+.stat-mini:hover{transform:translateY(-3px);box-shadow:0 6px 20px rgba(0,0,0,0.1);}
+
+.stat-mini-icon{font-size:1.3rem;display:block;margin-bottom:0.25rem;}
+
+.stat-mini-num{
+  font-family:'Teko',sans-serif;font-size:1.8rem;
+  font-weight:700;color:#0f2456;line-height:1;
+}
+
+.stat-mini-lbl{
+  font-size:0.62rem;font-weight:700;letter-spacing:0.5px;
+  text-transform:uppercase;color:#9ca3af;margin-top:0.2rem;
+}
+
+/* ── MAIN GRID ── */
+.analysis-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr 400px;
+  gap:1rem;
+}
+
+/* ── PLAYER STAT CARDS ── */
+.pcard{
+  background:#fff;border-radius:10px;
+  box-shadow:0 2px 8px rgba(0,0,0,0.06);
+  overflow:hidden;
+}
+
+.pcard-header{
+  background:linear-gradient(135deg,#0f2456,#1a3a7c);
+  padding:0.65rem 1rem;
+  display:flex;justify-content:space-between;align-items:center;
+}
+
+.pcard-title{
+  font-size:0.8rem;font-weight:700;letter-spacing:0.5px;
+  text-transform:uppercase;color:rgba(255,255,255,0.75);
+}
+
+.pcard-badge{
+  font-size:1.1rem;
+}
+
+.pcard-body{
+  padding:1rem;
+  display:flex;gap:0.85rem;align-items:flex-start;
+}
+
+.pcard-avatar{
+  width:72px;height:72px;border-radius:50%;
+  background:linear-gradient(135deg,#1a3a7c,#2455a8);
+  display:flex;align-items:center;justify-content:center;
+  font-size:2rem;flex-shrink:0;
+  border:3px solid #eef2f7;
+}
+
+.pcard-label{
+  font-size:0.68rem;font-weight:700;letter-spacing:0.5px;
+  text-transform:uppercase;color:#9ca3af;
+  margin-bottom:0.15rem;
+}
+
+.pcard-val{
+  font-family:'Teko',sans-serif;font-size:2rem;
+  font-weight:700;color:#d4af37;line-height:1;
+}
+
+.pcard-name{
+  font-size:1rem;font-weight:700;color:#1a3a7c;
+  margin-top:0.15rem;
+}
+
+.pcard-team{font-size:0.8rem;color:#6b7280;font-weight:500;}
+
+/* ── POINTS TABLE ── */
+.pts-card{
+  background:#fff;border-radius:10px;
+  box-shadow:0 2px 8px rgba(0,0,0,0.06);
+  overflow:hidden;
+  grid-row:1/3;
+}
+
+.pts-card-header{
+  background:#0f2456;
+  padding:0.75rem 1rem;
+  font-size:0.85rem;font-weight:700;letter-spacing:0.5px;
+  text-transform:uppercase;color:#fff;
+}
+
+.pts-table{width:100%;border-collapse:collapse;font-size:0.8rem;}
+
+.pts-table thead tr{background:#1a3a7c;}
+.pts-table thead th{
+  padding:0.55rem 0.6rem;color:#fff;font-weight:700;
+  font-size:0.72rem;letter-spacing:0.5px;text-transform:uppercase;
+  text-align:center;
+}
+
+.pts-table thead th:first-child{text-align:left;padding-left:0.75rem;}
+.pts-table thead th:nth-child(2){text-align:left;}
+
+.pts-table tbody tr{border-bottom:1px solid #f0f4f8;transition:background 0.15s;}
+.pts-table tbody tr:hover{background:#f8fafc;}
+
+.pts-table tbody tr:nth-child(-n+4){background:#fafbff;}
+
+.pts-table td{padding:0.55rem 0.6rem;vertical-align:middle;text-align:center;font-weight:600;}
+.pts-table td:first-child{padding-left:0.75rem;}
+.pts-table td:nth-child(2){text-align:left;}
+
+.team-cell{display:flex;align-items:center;gap:0.5rem;}
+
+.team-thumb{
+  width:24px;height:24px;border-radius:50%;
+  background:#eef2f7;border:1px solid #e2e8f0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:0.75rem;flex-shrink:0;
+}
+
+.pts-num{
+  display:inline-block;background:#1a3a7c;color:#fff;
+  font-weight:800;font-size:0.78rem;
+  padding:1px 8px;border-radius:10px;
+  min-width:30px;text-align:center;
+}
+
+.qualify-dot{
+  width:8px;height:8px;border-radius:50%;
+  background:#22c55e;display:inline-block;
+  margin-right:3px;
+}
+
+/* ── CHART SECTION ── */
+.chart-section{
+  background:#fff;border-radius:10px;
+  box-shadow:0 2px 8px rgba(0,0,0,0.06);
+  padding:1.25rem;margin-top:1rem;
+}
+
+.chart-title{
+  font-family:'Teko',sans-serif;font-size:1.3rem;
+  font-weight:600;letter-spacing:1px;color:#0f2456;
+  margin-bottom:0.25rem;
+}
+
+/* ── LIVE WIDGET ── */
+.live-section{
+  margin-top:1rem;
+  background:#fff;border-radius:10px;
+  box-shadow:0 2px 8px rgba(0,0,0,0.06);
+  overflow:hidden;
+}
+
+.live-section-header{
+  background:linear-gradient(135deg,#e63946,#c91a27);
+  padding:0.65rem 1rem;
+  display:flex;align-items:center;gap:0.6rem;
+  font-size:0.85rem;font-weight:700;letter-spacing:1px;
+  text-transform:uppercase;color:#fff;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="history-layout">
+  <!-- LEFT SIDEBAR -->
+  <div class="ipl-sidebar">
+    <div class="sidebar-top">
+      <div class="sidebar-year-big" id="sidebar-year">{{ season }}</div>
+      <div class="sidebar-year-lbl">IPL Season</div>
+    </div>
+
+    <div class="sidebar-nav">
+      <a href="/" class="snav-link"><span class="snav-icon">🏠</span>Home</a>
+      <a href="/matches/" class="snav-link"><span class="snav-icon">🏏</span>Live Matches</a>
+      <a href="/scorecard/" class="snav-link"><span class="snav-icon">📊</span>Scorecard</a>
+      <a href="/history/" class="snav-link active"><span class="snav-icon">📈</span>Analysis</a>
+      <a href="/jarvis/" class="snav-link"><span class="snav-icon">🤖</span>Jarvis AI</a>
+    </div>
+
+    <div class="sidebar-social">
+      <div class="social-title">Follow IPL</div>
+      <a href="https://iplt20.com" target="_blank" class="social-link">
+        <span class="social-icon">🏏</span>ipIT20.com
+      </a>
+      <a href="https://twitter.com/IPL" target="_blank" class="social-link">
+        <span class="social-icon">✖</span>Twitter
+      </a>
+      <a href="https://facebook.com/IPL" target="_blank" class="social-link">
+        <span class="social-icon">📘</span>Facebook
+      </a>
+      <a href="https://instagram.com/ipl" target="_blank" class="social-link">
+        <span class="social-icon">📸</span>Instagram
+      </a>
+      <a href="https://espncricinfo.com" target="_blank" class="social-link">
+        <span class="social-icon">📡</span>ESPN Cricinfo
+      </a>
+      <a href="https://cricbuzz.com" target="_blank" class="social-link">
+        <span class="social-icon">🔵</span>Cricbuzz
+      </a>
+      <a href="https://youtube.com/@IPL" target="_blank" class="social-link">
+        <span class="social-icon">▶</span>YouTube
+      </a>
+    </div>
+
+    <div class="sidebar-footer">
+      Designed &amp; Developed by<br>
+      <span>IPL FANZONE</span><br>
+      Data Tutorials
+    </div>
+  </div>
+
+  <!-- RIGHT CONTENT -->
+  <div class="history-content">
+
+    <!-- SEASON SELECTOR -->
+    <div class="season-selector-bar">
+      <div class="season-title">IPL ANALYSIS (2008 – 2025)</div>
+      <div class="season-select-wrap">
+        <span class="season-select-label">Select IPL Season</span>
+        <select class="season-select" id="season-select" onchange="changeSeason(this.value)">
+          {% for yr in all_seasons %}
+          <option value="{{ yr }}" {% if yr == season %}selected{% endif %}>{{ yr }}</option>
+          {% endfor %}
+        </select>
+        <!-- Tata IPL logo area -->
+        <div style="display:flex;align-items:center;gap:0.4rem;margin-left:0.5rem;">
+          <div style="background:#1a3a7c;border-radius:6px;padding:2px 8px;font-size:0.7rem;font-weight:800;color:#d4af37;letter-spacing:1px;">TATA</div>
+          <div style="background:#d4af37;border-radius:6px;padding:2px 8px;font-size:0.7rem;font-weight:800;color:#0f2456;letter-spacing:2px;">IPL</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHAMPION & RUNNER UP -->
+    <div class="champ-runner-row">
+      <div class="champ-box">
+        <div class="champ-logo-big" id="champ-logo">🏆</div>
+        <div>
+          <div class="champ-label">Champion</div>
+          <div class="champ-team-name" id="champ-name">{{ season_data.champion }}</div>
+        </div>
+      </div>
+      <div class="champ-box runner">
+        <div class="champ-logo-big" id="runner-logo">🥈</div>
+        <div>
+          <div class="champ-label">Runner Up</div>
+          <div class="champ-team-name" id="runner-name">{{ season_data.runner_up }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STATS ROW -->
+    <div class="stats-row">
+      <div class="stat-mini">
+        <span class="stat-mini-icon">6️⃣</span>
+        <div class="stat-mini-num" id="stat-sixes">{{ season_data.sixes }}</div>
+        <div class="stat-mini-lbl">Total Sixes</div>
+      </div>
+      <div class="stat-mini">
+        <span class="stat-mini-icon">4️⃣</span>
+        <div class="stat-mini-num" id="stat-fours">{{ season_data.fours }}</div>
+        <div class="stat-mini-lbl">Total Fours</div>
+      </div>
+      <div class="stat-mini">
+        <span class="stat-mini-icon">🏏</span>
+        <div class="stat-mini-num" id="stat-matches">{{ season_data.matches }}</div>
+        <div class="stat-mini-lbl">Total Matches</div>
+      </div>
+      <div class="stat-mini">
+        <span class="stat-mini-icon">👥</span>
+        <div class="stat-mini-num" id="stat-teams">{{ detail.teams|default:10 }}</div>
+        <div class="stat-mini-lbl">Total Teams</div>
+      </div>
+      <div class="stat-mini">
+        <span class="stat-mini-icon">⭐</span>
+        <div class="stat-mini-num" id="stat-50s">{{ detail.half_centuries|default:120 }}</div>
+        <div class="stat-mini-lbl">Half Centuries</div>
+      </div>
+      <div class="stat-mini">
+        <span class="stat-mini-icon">💯</span>
+        <div class="stat-mini-num" id="stat-100s">{{ detail.centuries|default:7 }}</div>
+        <div class="stat-mini-lbl">Centuries</div>
+      </div>
+      <div class="stat-mini">
+        <span class="stat-mini-icon">🏟</span>
+        <div class="stat-mini-num" id="stat-venues">{{ season_data.venues }}</div>
+        <div class="stat-mini-lbl">Total Venues</div>
+      </div>
+    </div>
+
+    <!-- MAIN ANALYSIS GRID -->
+    <div class="analysis-grid">
+
+      <!-- ORANGE CAP -->
+      <div class="pcard">
+        <div class="pcard-header">
+          <span class="pcard-title">Orange Cap Stats</span>
+          <span class="pcard-badge">🧡</span>
+        </div>
+        <div class="pcard-body">
+          <div class="pcard-avatar">🏏</div>
+          <div>
+            <div class="pcard-label">Orange Cap</div>
+            <div class="pcard-name" id="oc-player">{{ detail.orange_cap.player }}</div>
+            <div class="pcard-label" style="margin-top:0.6rem;">Runs</div>
+            <div class="pcard-val" id="oc-runs">{{ detail.orange_cap.runs }}</div>
+            <div class="pcard-label" style="margin-top:0.4rem;">Team</div>
+            <div class="pcard-team" id="oc-team">{{ detail.orange_cap.team }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PURPLE CAP -->
+      <div class="pcard">
+        <div class="pcard-header">
+          <span class="pcard-title">Purple Cap Stats</span>
+          <span class="pcard-badge">💜</span>
+        </div>
+        <div class="pcard-body">
+          <div class="pcard-avatar">🎯</div>
+          <div>
+            <div class="pcard-label">Purple Cap</div>
+            <div class="pcard-name" id="pc-player">{{ detail.purple_cap.player }}</div>
+            <div class="pcard-label" style="margin-top:0.6rem;">Wickets</div>
+            <div class="pcard-val" id="pc-wickets" style="color:#7c3aed;">{{ detail.purple_cap.wickets }}</div>
+            <div class="pcard-label" style="margin-top:0.4rem;">Team</div>
+            <div class="pcard-team" id="pc-team">{{ detail.purple_cap.team }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- POINTS TABLE -->
+      <div class="pts-card">
+        <div class="pts-card-header">Points Table</div>
+        <table class="pts-table" id="pts-table">
+          <thead>
+            <tr>
+              <th>Logo</th>
+              <th>Team Name</th>
+              <th>Pld</th>
+              <th>Won</th>
+              <th>Lost</th>
+              <th>NR</th>
+              <th>Tie</th>
+              <th style="background:#d4af37;color:#0f2456;">Total Points</th>
+            </tr>
+          </thead>
+          <tbody id="pts-body">
+            {% if detail.points_table %}
+              {% for row in detail.points_table %}
+              <tr>
+                <td><div class="team-thumb">{{ row.logo }}</div></td>
+                <td>
+                  <div class="team-cell">
+                    {% if forloop.counter <= 4 %}<span class="qualify-dot"></span>{% endif %}
+                    {{ row.team }}
+                  </div>
+                </td>
+                <td>{{ row.pld }}</td>
+                <td>{{ row.won }}</td>
+                <td>{{ row.lost }}</td>
+                <td>{{ row.nr }}</td>
+                <td>{{ row.tie }}</td>
+                <td><span class="pts-num">{{ row.pts }}</span></td>
+              </tr>
+              {% endfor %}
+            {% else %}
+              <tr><td colspan="8" style="text-align:center;padding:2rem;color:#9ca3af;">Data for {{ season }} coming soon</td></tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- MOST 4s -->
+      <div class="pcard">
+        <div class="pcard-header">
+          <span class="pcard-title">Total 4s in a Season</span>
+          <span class="pcard-badge">4️⃣</span>
+        </div>
+        <div class="pcard-body">
+          <div class="pcard-avatar">🏏</div>
+          <div>
+            <div class="pcard-label">Player Name</div>
+            <div class="pcard-name" id="f4-player">{{ detail.most_fours.player }}</div>
+            <div class="pcard-label" style="margin-top:0.6rem;">No of 4s</div>
+            <div class="pcard-val" id="f4-count" style="color:#22c55e;">{{ detail.most_fours.count }}</div>
+            <div class="pcard-label" style="margin-top:0.4rem;">Team Name</div>
+            <div class="pcard-team" id="f4-team">{{ detail.most_fours.team }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MOST 6s -->
+      <div class="pcard">
+        <div class="pcard-header">
+          <span class="pcard-title">Total 6s in a Season</span>
+          <span class="pcard-badge">6️⃣</span>
+        </div>
+        <div class="pcard-body">
+          <div class="pcard-avatar">⚡</div>
+          <div>
+            <div class="pcard-label">Player Name</div>
+            <div class="pcard-name" id="f6-player">{{ detail.most_sixes.player }}</div>
+            <div class="pcard-label" style="margin-top:0.6rem;">No of 6s</div>
+            <div class="pcard-val" id="f6-count" style="color:#e63946;">{{ detail.most_sixes.count }}</div>
+            <div class="pcard-label" style="margin-top:0.4rem;">Team Name</div>
+            <div class="pcard-team" id="f6-team">{{ detail.most_sixes.team }}</div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /analysis-grid -->
+
+    <!-- LIVE SCORE WIDGET (Crictimes) -->
+    <div class="live-section" style="margin-top:1rem;">
+      <div class="live-section-header">
+        <span>🔴</span> LIVE SCORES — IPL 2025
+      </div>
+      <div style="padding:0;">
+        <iframe src="https://bwidget.crictimes.org/" style="width:100%;min-height:250px;display:block;" frameborder="0" scrolling="yes"></iframe>
+      </div>
+    </div>
+
+    <!-- TREND CHARTS -->
+    <div class="chart-section" style="margin-top:1rem;">
+      <div class="chart-title">📈 IPL TRENDS 2008–2025</div>
+      <div style="font-size:0.78rem;color:#9ca3af;margin-bottom:1rem;text-transform:uppercase;letter-spacing:0.5px;">Sixes, Fours &amp; Match Count Over the Years</div>
+      <canvas id="trend-chart" style="max-height:280px;"></canvas>
+    </div>
+
+  </div><!-- /history-content -->
+</div><!-- /history-layout -->
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+const SEASON_API = '/history/api/?season=';
+
+async function changeSeason(yr) {
+  document.getElementById('sidebar-year').textContent = yr;
+  document.getElementById('season-select').value = yr;
+
+  const resp = await fetch(SEASON_API + yr);
+  const json = await resp.json();
+  const d = json.data; const det = json.detail;
+
+  // Update champion/runner
+  document.getElementById('champ-name').textContent = d.champion || '—';
+  document.getElementById('runner-name').textContent = d.runner_up || '—';
+
+  // Stats
+  animateCount('stat-sixes', d.sixes || 0);
+  animateCount('stat-fours', d.fours || 0);
+  animateCount('stat-matches', d.matches || 0);
+  animateCount('stat-teams', det.teams || 10);
+  animateCount('stat-50s', det.half_centuries || 0);
+  animateCount('stat-100s', det.centuries || 0);
+  animateCount('stat-venues', d.venues || 0);
+
+  // Orange cap
+  if (det.orange_cap) {
+    document.getElementById('oc-player').textContent = det.orange_cap.player;
+    document.getElementById('oc-runs').textContent = det.orange_cap.runs;
+    document.getElementById('oc-team').textContent = det.orange_cap.team;
+  }
+
+  // Purple cap
+  if (det.purple_cap) {
+    document.getElementById('pc-player').textContent = det.purple_cap.player;
+    document.getElementById('pc-wickets').textContent = det.purple_cap.wickets;
+    document.getElementById('pc-team').textContent = det.purple_cap.team;
+  }
+
+  // Most 4s
+  if (det.most_fours) {
+    document.getElementById('f4-player').textContent = det.most_fours.player;
+    document.getElementById('f4-count').textContent = det.most_fours.count;
+    document.getElementById('f4-team').textContent = det.most_fours.team;
+  }
+
+  // Most 6s
+  if (det.most_sixes) {
+    document.getElementById('f6-player').textContent = det.most_sixes.player;
+    document.getElementById('f6-count').textContent = det.most_sixes.count;
+    document.getElementById('f6-team').textContent = det.most_sixes.team;
+  }
+
+  // Points table
+  const tbody = document.getElementById('pts-body');
+  if (det.points_table && det.points_table.length > 0) {
+    tbody.innerHTML = det.points_table.map((row, i) => `
+      <tr>
+        <td><div class="team-thumb">${row.logo}</div></td>
+        <td>
+          <div class="team-cell">
+            ${i < 4 ? '<span class="qualify-dot"></span>' : ''}
+            ${row.team}
+          </div>
+        </td>
+        <td>${row.pld}</td>
+        <td>${row.won}</td>
+        <td>${row.lost}</td>
+        <td>${row.nr}</td>
+        <td>${row.tie}</td>
+        <td><span class="pts-num">${row.pts}</span></td>
+      </tr>`).join('');
+  } else {
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:1.5rem;color:#9ca3af;">Historical data for ${yr}</td></tr>`;
+  }
+
+  // Update URL without reload
+  window.history.pushState({}, '', `/history/?season=${yr}`);
+}
+
+function animateCount(id, target) {
+  const el = document.getElementById(id);
+  const start = parseInt(el.textContent.replace(/,/g, '')) || 0;
+  const range = target - start;
+  const steps = 30;
+  let step = 0;
+  const timer = setInterval(() => {
+    step++;
+    el.textContent = Math.round(start + range * (step / steps)).toLocaleString();
+    if (step >= steps) clearInterval(timer);
+  }, 20);
+}
+
+// ── TREND CHART ──
+async function loadTrendChart() {
+  const resp = await fetch('/history/chart-data/');
+  const data = await resp.json();
+
+  const ctx = document.getElementById('trend-chart').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: data.seasons,
+      datasets: [
+        {
+          label: 'Total Sixes',
+          data: data.sixes,
+          backgroundColor: 'rgba(212,175,55,0.7)',
+          borderColor: '#d4af37',
+          borderWidth: 1,
+          yAxisID: 'y',
+        },
+        {
+          label: 'Total Fours',
+          data: data.fours,
+          backgroundColor: 'rgba(26,58,124,0.5)',
+          borderColor: '#1a3a7c',
+          borderWidth: 1,
+          yAxisID: 'y',
+        },
+        {
+          label: 'Matches',
+          data: data.matches,
+          type: 'line',
+          borderColor: '#e63946',
+          backgroundColor: 'rgba(230,57,70,0.08)',
+          pointBackgroundColor: '#e63946',
+          borderWidth: 2,
+          pointRadius: 4,
+          tension: 0.4,
+          yAxisID: 'y1',
+        },
+      ]
+    },
+    options: {
+      responsive: true,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'top', labels: { font: { family: 'Barlow', size: 12 } } },
+        tooltip: {
+          backgroundColor: '#0f2456',
+          titleFont: { family: 'Barlow Condensed', size: 13 },
+          bodyFont: { family: 'Barlow', size: 12 },
+        }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { family: 'Barlow', size: 11 } } },
+        y: {
+          position: 'left',
+          grid: { color: 'rgba(0,0,0,0.05)' },
+          ticks: { font: { family: 'Barlow', size: 11 } }
+        },
+        y1: {
+          position: 'right',
+          grid: { drawOnChartArea: false },
+          ticks: { font: { family: 'Barlow', size: 11 } }
+        }
+      }
+    }
+  });
+}
+
+loadTrendChart();
+</script>
+{% endblock %}

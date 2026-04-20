@@ -1,0 +1,408 @@
+{% extends "base/base.html" %}
+{% block title %}Jarvis AI — IPL Cricket Assistant{% endblock %}
+
+{% block extra_head %}
+<style>
+.jarvis-layout{display:grid;grid-template-columns:220px 1fr;min-height:calc(100vh - 130px);}
+
+.jarvis-sidebar{
+  background:linear-gradient(180deg,#0f2456,#1a3a7c);
+  padding:1.25rem 0.5rem;display:flex;flex-direction:column;
+}
+
+.snav-link{display:flex;align-items:center;gap:0.75rem;padding:0.65rem 1rem;color:rgba(255,255,255,0.6);text-decoration:none;font-size:0.85rem;font-weight:500;border-radius:8px;transition:all 0.2s;margin-bottom:0.1rem;}
+.snav-link:hover,.snav-link.active{color:#fff;background:rgba(255,255,255,0.08);}
+.snav-icon{font-size:1rem;width:22px;text-align:center;}
+
+.memory-panel{
+  margin-top:auto;padding:0.75rem;
+  background:rgba(255,255,255,0.04);
+  border-radius:10px;border:1px solid rgba(255,255,255,0.08);
+}
+
+.mem-title{font-size:0.65rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.35);margin-bottom:0.5rem;}
+.mem-row{font-size:0.78rem;color:rgba(255,255,255,0.6);margin-bottom:0.25rem;display:flex;align-items:center;gap:0.4rem;}
+.mem-val{color:#d4af37;font-weight:600;}
+
+/* MAIN CHAT */
+.jarvis-main{
+  display:flex;flex-direction:column;
+  background:#eef2f7;
+  overflow:hidden;height:calc(100vh - 130px);
+}
+
+.jarvis-header{
+  background:linear-gradient(135deg,#0f2456,#1a3a7c);
+  padding:1rem 1.5rem;
+  display:flex;align-items:center;gap:1rem;
+  flex-shrink:0;
+}
+
+.j-avatar{
+  width:52px;height:52px;border-radius:50%;
+  background:linear-gradient(135deg,#d4af37,#e8a000);
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.6rem;flex-shrink:0;
+  box-shadow:0 0 20px rgba(212,175,55,0.3);
+}
+
+.j-name{font-family:'Teko',sans-serif;font-size:1.8rem;letter-spacing:2px;color:#d4af37;}
+.j-desc{font-size:0.8rem;color:rgba(255,255,255,0.6);}
+
+.jarvis-status{
+  margin-left:auto;
+  display:flex;align-items:center;gap:6px;
+  font-size:0.78rem;color:rgba(255,255,255,0.5);
+}
+
+.jarvis-status::before{content:'';width:8px;height:8px;background:#22c55e;border-radius:50%;box-shadow:0 0 8px #22c55e;animation:blink 1.5s infinite;}
+
+/* SUGGESTED PROMPTS */
+.prompts-bar{
+  padding:0.85rem 1.25rem;
+  background:#fff;border-bottom:1px solid #e2e8f0;
+  display:flex;gap:0.5rem;flex-wrap:wrap;flex-shrink:0;
+}
+
+.prompt-chip{
+  background:#f0f4f8;border:1px solid #e2e8f0;
+  border-radius:20px;padding:0.35rem 0.85rem;
+  font-size:0.8rem;font-weight:600;color:#374151;
+  cursor:pointer;transition:all 0.2s;white-space:nowrap;
+}
+
+.prompt-chip:hover{background:#1a3a7c;color:#fff;border-color:#1a3a7c;}
+
+/* MESSAGES */
+.jarvis-msgs{
+  flex:1;overflow-y:auto;
+  padding:1.25rem;
+  display:flex;flex-direction:column;gap:1rem;
+}
+
+.jmsg{display:flex;gap:0.75rem;align-items:flex-start;animation:msg-pop 0.3s ease;}
+
+@keyframes msg-pop{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+.jmsg.user{flex-direction:row-reverse;}
+
+.jmsg-avatar{
+  width:36px;height:36px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.1rem;flex-shrink:0;
+  background:linear-gradient(135deg,#d4af37,#e8a000);
+}
+
+.jmsg.user .jmsg-avatar{background:linear-gradient(135deg,#1a3a7c,#2455a8);}
+
+.jmsg-bubble{
+  max-width:72%;
+  background:#fff;border:1px solid #e2e8f0;
+  border-radius:14px 14px 14px 3px;
+  padding:0.85rem 1rem;
+  font-size:0.92rem;line-height:1.55;color:#374151;
+  box-shadow:0 1px 4px rgba(0,0,0,0.05);
+}
+
+.jmsg.user .jmsg-bubble{
+  background:linear-gradient(135deg,#0f2456,#1a3a7c);
+  color:#fff;border-radius:14px 14px 3px 14px;
+  border-color:transparent;
+}
+
+.jmsg-label{
+  font-size:0.68rem;font-weight:700;letter-spacing:0.5px;
+  text-transform:uppercase;margin-bottom:0.3rem;color:#9ca3af;
+}
+
+.jmsg.user .jmsg-label{color:rgba(212,175,55,0.7);text-align:right;}
+
+.jmsg-time{font-size:0.65rem;color:#9ca3af;margin-top:0.3rem;}
+.jmsg.user .jmsg-time{text-align:right;color:rgba(255,255,255,0.4);}
+
+/* TYPING */
+.typing-bubble{
+  display:flex;align-items:center;gap:5px;padding:0.75rem 1rem;
+  background:#fff;border-radius:14px 14px 14px 3px;
+  border:1px solid #e2e8f0;width:80px;
+}
+
+.typing-dot{width:7px;height:7px;border-radius:50%;background:#d4af37;animation:dot-bounce 1.2s infinite;}
+.typing-dot:nth-child(2){animation-delay:0.2s;}
+.typing-dot:nth-child(3){animation-delay:0.4s;}
+
+@keyframes dot-bounce{0%,80%,100%{transform:translateY(0);opacity:0.4}40%{transform:translateY(-8px);opacity:1}}
+
+/* INPUT */
+.jarvis-input-area{
+  padding:1rem 1.25rem;
+  background:#fff;border-top:1px solid #e2e8f0;
+  display:flex;gap:0.6rem;align-items:flex-end;
+  flex-shrink:0;
+}
+
+.j-input{
+  flex:1;border:1.5px solid var(--ipl-gold);border-radius:12px;
+  padding:0.75rem 1rem;font-family:'Barlow',sans-serif;
+  font-size:1rem;outline:none;resize:none;max-height:120px;
+  line-height:1.4;transition:all 0.2s;
+  background:rgba(15,36,86,1) !important;
+  color:#fff !important;
+  caret-color:var(--ipl-gold);
+}
+.j-input::placeholder{color:rgba(255,255,255,0.4) !important;}
+
+.j-input:focus{border-color:#1a3a7c;}
+
+.j-send{
+  width:44px;height:44px;border-radius:12px;
+  background:linear-gradient(135deg,#0f2456,#1a3a7c);
+  border:none;color:#fff;font-size:1.1rem;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:all 0.2s;flex-shrink:0;
+}
+
+.j-send:hover{background:linear-gradient(135deg,#d4af37,#e8a000);color:#0f2456;}
+.j-send:disabled{opacity:0.4;cursor:not-allowed;}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="jarvis-layout">
+
+  <!-- SIDEBAR -->
+  <div class="jarvis-sidebar">
+    <a href="/" class="snav-link"><span class="snav-icon">🏠</span>Home</a>
+    <a href="/matches/" class="snav-link"><span class="snav-icon">🏏</span>Matches</a>
+    <a href="/scorecard/" class="snav-link"><span class="snav-icon">📊</span>Scorecard</a>
+    <a href="/history/" class="snav-link"><span class="snav-icon">📈</span>Analysis</a>
+    <a href="/jarvis/" class="snav-link active"><span class="snav-icon">🤖</span>Jarvis AI</a>
+
+    <hr style="border:none;border-top:1px solid rgba(255,255,255,0.06);margin:1rem 0.5rem;">
+    <div style="padding:0 0.75rem 0.5rem;font-size:0.65rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.25);">Jarvis Memory</div>
+
+    <div class="memory-panel">
+      <div class="mem-title">What Jarvis Knows About You</div>
+      <div class="mem-row">👤 Username: <span class="mem-val" id="mem-username">{{ memory.username|default:"Unknown" }}</span></div>
+      <div class="mem-row">🏏 Team: <span class="mem-val" id="mem-team">{{ memory.fav_team|default:"Not set" }}</span></div>
+      <div class="mem-row">📍 Home: <span class="mem-val" id="mem-loc">{{ memory.location|default:"Unknown" }}</span></div>
+      <button onclick="clearMemory()" style="margin-top:0.6rem;width:100%;background:rgba(230,57,70,0.12);border:1px solid rgba(230,57,70,0.2);border-radius:6px;padding:0.35rem;color:rgba(255,255,255,0.5);font-size:0.72rem;cursor:pointer;font-family:'Barlow',sans-serif;transition:all 0.2s;" onmouseover="this.style.background='rgba(230,57,70,0.25)'" onmouseout="this.style.background='rgba(230,57,70,0.12)'">
+        🗑 Clear Memory
+      </button>
+    </div>
+
+    <div style="margin-top:1rem;padding:0 0.75rem;">
+      <div style="font-size:0.65rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.25);margin-bottom:0.5rem;">Powered by</div>
+      <div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:0.65rem;text-align:center;">
+        <div style="font-size:0.82rem;font-weight:700;color:#d4af37;">Groq</div>
+        <div style="font-size:0.68rem;color:rgba(255,255,255,0.35);margin-top:0.15rem;">Llama 3.1 8B Instant</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN CHAT -->
+  <div class="jarvis-main">
+
+    <div class="jarvis-header">
+      <div class="j-avatar">🤖</div>
+      <div>
+        <div class="j-name">JARVIS</div>
+        <div class="j-desc">Your IPL Cricket AI — Powered by Groq Llama 3.1</div>
+      </div>
+      <div class="jarvis-status">Online &amp; Ready</div>
+    </div>
+
+    <div class="prompts-bar">
+      <span style="font-size:0.72rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#9ca3af;align-self:center;">Ask:</span>
+      <button class="prompt-chip" onclick="quickPrompt(this)">👑 Best IPL player ever?</button>
+      <button class="prompt-chip" onclick="quickPrompt(this)">⚔️ MI vs CSK — who's better?</button>
+      <button class="prompt-chip" onclick="quickPrompt(this)">🏆 IPL 2025 winner prediction</button>
+      <button class="prompt-chip" onclick="quickPrompt(this)">📊 RCB's best season stats</button>
+      <button class="prompt-chip" onclick="quickPrompt(this)">⚡ Who has most sixes ever?</button>
+      <button class="prompt-chip" onclick="quickPrompt(this)">🎯 Best death bowlers IPL</button>
+    </div>
+
+    <div class="jarvis-msgs" id="jarvis-msgs">
+      <div class="jmsg">
+        <div class="jmsg-avatar">🤖</div>
+        <div class="jmsg-bubble">
+          <div class="jmsg-label">Jarvis</div>
+          Hello{% if memory.username %}, <strong>{{ memory.username }}</strong>{% endif %}! 🏏 I'm Jarvis, your personal IPL cricket expert. I know everything about all 18 IPL seasons (2008–2025), player stats, team strategies, records, and live matches.<br><br>
+          {% if memory.fav_team %}I know you support <strong>{{ memory.fav_team }}</strong> — let's discuss their season! {% endif %}What would you like to explore today?
+          <div class="jmsg-time">Just now</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="jarvis-input-area">
+      <button class="j-send" id="j-voice" onclick="startListen()" title="Voice Command">🎤</button>
+      <textarea class="j-input" id="j-input" placeholder="Ask Jarvis anything about IPL cricket..." rows="1"></textarea>
+      <button class="j-send" id="j-send" onclick="sendJarvis()">➤</button>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+let history = [];
+let loading = false;
+
+function quickPrompt(btn) {
+  document.getElementById('j-input').value = btn.textContent.trim().replace(/^[^\w]+/, '');
+  sendJarvis();
+}
+
+async function sendJarvis() {
+  if (loading) return;
+  const inp = document.getElementById('j-input');
+  const msg = inp.value.trim();
+  if (!msg) return;
+  inp.value = '';
+  inp.style.height = 'auto';
+
+  appendMsg(msg, 'user');
+  history.push({ role: 'user', content: msg });
+
+  loading = true;
+  document.getElementById('j-send').disabled = true;
+  const typingEl = appendTyping();
+
+  try {
+    const r = await fetch('/jarvis/ask/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+      body: JSON.stringify({ message: msg, history: history.slice(-8) })
+    });
+    
+    console.log(`[JARVIS] Response status: ${r.status}`);
+    
+    if (!r.ok) {
+      console.error(`[JARVIS] HTTP Error: ${r.status} ${r.statusText}`);
+      typingEl.remove();
+      appendMsg('🏏 Server error occurred. Please try again!', 'bot');
+      loading = false;
+      document.getElementById('j-send').disabled = false;
+      return;
+    }
+    
+    const d = await r.json();
+    console.log(`[JARVIS] Response: `, d);
+    
+    typingEl.remove();
+    
+    // Check if response has the expected content
+    if (!d || !d.response) {
+      console.error(`[JARVIS] Invalid response format: `, d);
+      appendMsg('🏏 Empty response received. Please try again!', 'bot');
+      loading = false;
+      document.getElementById('j-send').disabled = false;
+      return;
+    }
+    
+    appendMsg(d.response, 'bot');
+    history.push({ role: 'assistant', content: d.response });
+    
+    // Voice Speak
+    speak(d.response);
+
+    // Handle Action URL (Opening YouTube/Search)
+    if (d.action_url) {
+      setTimeout(() => {
+        window.open(d.action_url, '_blank');
+      }, 1500);
+    }
+
+    // Update memory display
+    if (d.memory) {
+      if (d.memory.username) document.getElementById('mem-username').textContent = d.memory.username;
+      if (d.memory.fav_team) document.getElementById('mem-team').textContent = d.memory.fav_team;
+      if (d.memory.location) document.getElementById('mem-loc').textContent = d.memory.location;
+    }
+  } catch (e) {
+    console.error(`[JARVIS] Fetch error: `, e);
+    typingEl.remove();
+    appendMsg('🏏 Network error! Please check your connection and try again.', 'bot');
+  }
+
+  loading = false;
+  document.getElementById('j-send').disabled = false;
+}
+
+function appendMsg(text, role) {
+  const area = document.getElementById('jarvis-msgs');
+  const isUser = role === 'user';
+  const username = window.FZ.username || 'You';
+  const now = new Date().toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' });
+  const div = document.createElement('div');
+  div.className = `jmsg${isUser ? ' user' : ''}`;
+  div.innerHTML = `
+    <div class="jmsg-avatar">${isUser ? (username[0] || '?').toUpperCase() : '🤖'}</div>
+    <div class="jmsg-bubble">
+      <div class="jmsg-label">${isUser ? username : 'Jarvis'}</div>
+      ${esc(text)}
+      <div class="jmsg-time">${now}</div>
+    </div>`;
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+}
+
+function appendTyping() {
+  const area = document.getElementById('jarvis-msgs');
+  const div = document.createElement('div');
+  div.className = 'jmsg';
+  div.innerHTML = `<div class="jmsg-avatar">🤖</div><div class="typing-bubble"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>`;
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+  return div;
+}
+
+// ── Voice Features (STT/TTS) ──
+function speak(text) {
+  const synth = window.speechSynthesis;
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.pitch = 1.1; utter.rate = 1;
+  synth.speak(utter);
+}
+
+function startListen() {
+  const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+  recognition.lang = 'en-US';
+  const vBtn = document.getElementById('j-voice');
+  vBtn.textContent = '🟡';
+  recognition.onresult = (event) => {
+    const transcript = event.results[0][0].transcript;
+    document.getElementById('j-input').value = transcript;
+    vBtn.textContent = '🎤';
+    sendJarvis();
+  };
+  recognition.onerror = () => { vBtn.textContent = '🎤'; showToast('Speech error'); };
+  recognition.start();
+}
+
+function esc(t) {
+  const d = document.createElement('div');
+  d.appendChild(document.createTextNode(t));
+  return d.innerHTML;
+}
+
+async function clearMemory() {
+  await fetch('/jarvis/memory/', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+    body: JSON.stringify({ name: '', fav_team: '' })
+  });
+  document.getElementById('mem-name').textContent = 'Unknown';
+  document.getElementById('mem-team').textContent = 'Not set';
+  showToast('Memory cleared 🗑');
+}
+
+const inp = document.getElementById('j-input');
+inp.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendJarvis(); } });
+inp.addEventListener('input', function () {
+  this.style.height = 'auto';
+  this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+});
+</script>
+{% endblock %}

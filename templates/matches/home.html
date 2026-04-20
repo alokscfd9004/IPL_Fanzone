@@ -1,0 +1,453 @@
+{% extends "base/base.html" %}
+{% block title %}IPL FanZone 2025 — Home{% endblock %}
+
+{% block extra_head %}
+<style>
+.home-layout{display:grid;grid-template-columns:220px 1fr;min-height:calc(100vh - 130px);}
+
+.home-sidebar{
+  background:linear-gradient(180deg,#0f2456 0%,#1a3a7c 100%);
+  padding:1.25rem 0.5rem;
+}
+
+.snav-link{display:flex;align-items:center;gap:0.75rem;padding:0.65rem 1rem;color:rgba(255,255,255,0.6);text-decoration:none;font-size:0.85rem;font-weight:500;border-radius:8px;transition:all 0.2s;margin-bottom:0.1rem;}
+.snav-link:hover,.snav-link.active{color:#fff;background:rgba(255,255,255,0.08);}
+.snav-icon{font-size:1rem;width:22px;text-align:center;}
+
+.home-content{padding:1.5rem;background:#eef2f7;}
+
+/* HERO */
+.hero-banner{
+  background:linear-gradient(135deg,#0f2456 0%,#1a3a7c 50%,#2455a8 100%);
+  border-radius:14px;
+  padding:2.5rem 2rem;
+  margin-bottom:1.5rem;
+  position:relative;overflow:hidden;
+  display:flex;align-items:center;justify-content:space-between;
+  box-shadow:0 8px 32px rgba(15,36,86,0.3);
+}
+
+.hero-banner::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse at 80% 50%,rgba(212,175,55,0.12) 0%,transparent 60%);
+}
+
+.hero-left{position:relative;z-index:1;}
+
+.hero-tag{
+  display:inline-block;
+  background:rgba(212,175,55,0.15);
+  border:1px solid rgba(212,175,55,0.4);
+  color:#d4af37;font-size:0.72rem;font-weight:700;
+  letter-spacing:2px;text-transform:uppercase;
+  padding:4px 12px;border-radius:20px;margin-bottom:0.75rem;
+}
+
+.hero-title{
+  font-family:'Teko',sans-serif;
+  font-size:3.2rem;font-weight:700;
+  color:#fff;line-height:1;letter-spacing:2px;
+  margin-bottom:0.75rem;
+}
+
+.hero-title span{color:#d4af37;}
+
+.hero-desc{
+  color:rgba(255,255,255,0.7);
+  font-size:1rem;line-height:1.5;
+  max-width:480px;margin-bottom:1.5rem;
+}
+
+.hero-btns{display:flex;gap:0.75rem;flex-wrap:wrap;}
+
+.btn-hero-gold{
+  background:linear-gradient(135deg,#d4af37,#e8a000);
+  color:#0f2456;font-weight:800;font-size:0.88rem;
+  letter-spacing:1px;text-transform:uppercase;
+  padding:0.65rem 1.5rem;border-radius:25px;
+  text-decoration:none;border:none;cursor:pointer;
+  transition:all 0.2s;box-shadow:0 4px 15px rgba(212,175,55,0.3);
+}
+
+.btn-hero-gold:hover{transform:scale(1.04);}
+
+.btn-hero-outline{
+  background:transparent;color:#fff;font-weight:700;font-size:0.88rem;
+  letter-spacing:1px;text-transform:uppercase;
+  padding:0.65rem 1.5rem;border-radius:25px;
+  text-decoration:none;border:1px solid rgba(255,255,255,0.3);
+  transition:all 0.2s;
+}
+
+.btn-hero-outline:hover{border-color:#d4af37;color:#d4af37;}
+
+.hero-right{position:relative;z-index:1;text-align:right;}
+
+.hero-stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;min-width:220px;}
+
+.hero-stat{
+  background:rgba(255,255,255,0.08);
+  border:1px solid rgba(255,255,255,0.12);
+  border-radius:10px;padding:0.85rem;text-align:center;
+}
+
+.hero-stat-num{font-family:'Teko',sans-serif;font-size:2rem;font-weight:700;color:#d4af37;line-height:1;}
+.hero-stat-lbl{font-size:0.68rem;color:rgba(255,255,255,0.5);letter-spacing:1px;text-transform:uppercase;}
+
+/* SECTION HEADERS */
+.section-hdr{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:1rem;
+}
+
+.section-hdr-title{
+  font-family:'Teko',sans-serif;font-size:1.5rem;
+  font-weight:600;letter-spacing:1px;color:#0f2456;
+  display:flex;align-items:center;gap:0.5rem;
+}
+
+.section-hdr a{
+  font-size:0.8rem;font-weight:700;color:#1a3a7c;
+  text-decoration:none;letter-spacing:0.5px;
+}
+
+.section-hdr a:hover{color:#d4af37;}
+
+/* MATCH CARDS */
+.match-card{
+  background:#fff;border-radius:12px;
+  border:1px solid #e2e8f0;
+  padding:1.25rem;cursor:pointer;
+  transition:all 0.25s;text-decoration:none;color:inherit;
+  display:block;box-shadow:0 2px 8px rgba(0,0,0,0.05);
+}
+
+.match-card:hover{transform:translateY(-4px);box-shadow:0 10px 30px rgba(0,0,0,0.1);border-color:#1a3a7c;}
+.match-card.live-card{border-top:3px solid #e63946;border-left:3px solid #e63946;}
+
+.mc-teams{display:flex;align-items:center;justify-content:space-between;gap:0.75rem;margin-bottom:1rem;}
+.mc-team{text-align:center;flex:1;}
+.mc-emoji{font-size:2.2rem;display:block;margin-bottom:0.25rem;}
+.mc-short{font-family:'Teko',sans-serif;font-size:1.5rem;font-weight:600;letter-spacing:1px;color:#0f2456;}
+.mc-score{font-size:0.95rem;font-weight:700;color:#d4af37;font-family:'Barlow Condensed',sans-serif;}
+.mc-overs{font-size:0.72rem;color:#9ca3af;}
+.mc-vs{font-family:'Teko',sans-serif;font-size:1.4rem;color:#cbd5e0;}
+
+.mc-footer{
+  border-top:1px solid #f0f4f8;
+  padding-top:0.75rem;
+  display:flex;justify-content:space-between;align-items:center;
+  font-size:0.78rem;color:#9ca3af;
+}
+
+.status-live{
+  display:inline-flex;align-items:center;gap:4px;
+  background:#e63946;color:#fff;
+  font-size:0.68rem;font-weight:800;letter-spacing:1px;
+  padding:2px 8px;border-radius:12px;text-transform:uppercase;
+  animation:pulse-red 1.5s infinite;
+}
+.status-live::before{content:'';width:5px;height:5px;background:#fff;border-radius:50%;animation:blink 1s infinite;}
+
+.status-upcoming{
+  background:rgba(26,58,124,0.08);color:#1a3a7c;
+  font-size:0.68rem;font-weight:700;padding:2px 8px;
+  border-radius:12px;border:1px solid rgba(26,58,124,0.2);letter-spacing:0.5px;
+}
+
+.status-completed{
+  background:#f0f4f8;color:#9ca3af;
+  font-size:0.68rem;font-weight:700;padding:2px 8px;border-radius:12px;
+}
+
+@keyframes pulse-red{0%,100%{box-shadow:0 0 0 0 rgba(230,57,70,0.4)}50%{box-shadow:0 0 0 6px rgba(230,57,70,0)}}
+
+.matches-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem;margin-bottom:1.5rem;}
+
+/* LIVE WIDGET */
+.live-widget-box{
+  background:#fff;border-radius:12px;
+  box-shadow:0 2px 8px rgba(0,0,0,0.06);
+  overflow:hidden;margin-bottom:1.5rem;
+}
+
+.lwb-header{
+  background:linear-gradient(135deg,#e63946,#c91a27);
+  padding:0.65rem 1rem;
+  display:flex;align-items:center;gap:0.5rem;
+  font-size:0.82rem;font-weight:700;
+  letter-spacing:1px;text-transform:uppercase;color:#fff;
+}
+
+/* TEAMS STRIP */
+.teams-strip{display:flex;gap:0.6rem;flex-wrap:wrap;margin-bottom:1.5rem;}
+
+.team-chip{
+  display:flex;align-items:center;gap:0.5rem;
+  background:#fff;border:1px solid #e2e8f0;
+  border-radius:25px;padding:0.4rem 0.85rem;
+  font-size:0.82rem;font-weight:600;
+  text-decoration:none;color:#0f2456;
+  transition:all 0.2s;box-shadow:0 1px 4px rgba(0,0,0,0.05);
+}
+
+.team-chip:hover{border-color:#1a3a7c;background:#f0f4f8;transform:translateY(-2px);}
+.team-chip-emoji{font-size:1rem;}
+
+/* JARVIS PROMO */
+.jarvis-promo{
+  background:linear-gradient(135deg,#0f2456,#1a3a7c);
+  border-radius:12px;padding:1.5rem;
+  display:flex;align-items:center;gap:1.5rem;
+  color:#fff;box-shadow:0 4px 20px rgba(15,36,86,0.2);
+}
+
+.jarvis-icon{font-size:3.5rem;flex-shrink:0;}
+.jarvis-title{font-family:'Teko',sans-serif;font-size:1.8rem;letter-spacing:2px;color:#d4af37;}
+.jarvis-desc{color:rgba(255,255,255,0.7);font-size:0.9rem;line-height:1.5;margin:0.5rem 0;}
+.btn-jarvis{display:inline-block;background:rgba(212,175,55,0.15);border:1px solid #d4af37;color:#d4af37;font-weight:700;font-size:0.82rem;letter-spacing:1px;text-transform:uppercase;padding:0.5rem 1.25rem;border-radius:20px;text-decoration:none;transition:all 0.2s;}
+.btn-jarvis:hover{background:#d4af37;color:#0f2456;}
+/* CHAT ROOMS */
+.chat-hub{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:1rem;margin-bottom:1.5rem;}
+.chat-card{background:#fff;border-radius:12px;border:1px solid #e2e8f0;padding:1.25rem;text-decoration:none;transition:all 0.2s;}
+.chat-card:hover{border-color:#1a3a7c;transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,0.06);}
+.chat-icon{font-size:1.8rem;margin-bottom:0.75rem;display:block;}
+.chat-name{font-weight:700;color:#0f2456;font-size:1rem;margin-bottom:0.25rem;}
+.chat-desc{font-size:0.8rem;color:#9ca3af;line-height:1.4;}
+.chat-desc{font-size:0.8rem;color:#9ca3af;line-height:1.4;}
+.btn-create-chat{background:rgba(26,58,124,0.06);border:1.5px dashed rgba(26,58,124,0.3);border-radius:12px;padding:1.25rem;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0.5rem;cursor:pointer;transition:all 0.2s;text-align:center;}
+.btn-create-chat:hover{background:rgba(26,58,124,0.1);border-color:#1a3a7c;transform:scale(1.02);}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="home-layout">
+  <!-- SIDEBAR -->
+  <div class="home-sidebar">
+    <div style="padding:1rem 0.75rem;text-align:center;border-bottom:1px solid rgba(255,255,255,0.08);margin-bottom:1rem;">
+      <div style="font-family:'Teko',sans-serif;font-size:4rem;font-weight:700;color:#d4af37;line-height:1;">2025</div>
+      <div style="font-size:0.68rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,0.45);">IPL Season</div>
+    </div>
+    <a href="/" class="snav-link active"><span class="snav-icon">🏠</span>Home</a>
+    <a href="/matches/" class="snav-link"><span class="snav-icon">🏏</span>All Matches</a>
+    <a href="/scorecard/" class="snav-link"><span class="snav-icon">📊</span>Live Scorecard</a>
+    <a href="/history/" class="snav-link"><span class="snav-icon">📈</span>IPL Analysis</a>
+    <a href="/jarvis/" class="snav-link"><span class="snav-icon">🤖</span>Jarvis AI</a>
+    <hr style="border:none;border-top:1px solid rgba(255,255,255,0.06);margin:0.75rem 0.5rem;">
+    <div style="padding:0 0.75rem 0.4rem;font-size:0.65rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.25);">Follow IPL</div>
+    <a href="https://iplt20.com" target="_blank" class="snav-link"><span class="snav-icon">🏏</span>ipIT20.com</a>
+    <a href="https://cricbuzz.com" target="_blank" class="snav-link"><span class="snav-icon">🔵</span>Cricbuzz</a>
+    <a href="https://espncricinfo.com" target="_blank" class="snav-link"><span class="snav-icon">📡</span>ESPN Cricinfo</a>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="home-content">
+
+    <!-- HERO -->
+    <div class="hero-banner">
+      <div class="hero-left">
+        <div class="hero-tag">🏆 IPL 2025 · LIVE</div>
+        <h1 class="hero-title">ULTIMATE <span>IPL</span><br>FAN ZONE</h1>
+        <p class="hero-desc">Live scores, 3D match animations, Cricbuzz scorecards, historical analysis (2008–2025), and Jarvis AI — all in one platform.</p>
+        <div class="hero-btns">
+          <a href="/scorecard/" class="btn-hero-gold">📊 Live Scorecard</a>
+          <a href="/history/" class="btn-hero-outline">📈 IPL Analysis</a>
+          <a href="/jarvis/" class="btn-hero-outline">🤖 Jarvis AI</a>
+        </div>
+      </div>
+      <div class="hero-right">
+        <div class="hero-stats-grid">
+          <div class="hero-stat"><div class="hero-stat-num">{{ live.count }}</div><div class="hero-stat-lbl">Live Now</div></div>
+          <div class="hero-stat"><div class="hero-stat-num">10</div><div class="hero-stat-lbl">Teams</div></div>
+          <div class="hero-stat"><div class="hero-stat-num">74</div><div class="hero-stat-lbl">Matches</div></div>
+          <div class="hero-stat"><div class="hero-stat-num">18</div><div class="hero-stat-lbl">Seasons</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LIVE WIDGET -->
+    <div class="live-widget-box">
+      <div class="lwb-header"><span>🔴</span> LIVE SCORES — CRICTIMES WIDGET</div>
+      <iframe src="https://bwidget.crictimes.org/" style="width:100%;min-height:250px;display:block;" frameborder="0" scrolling="yes"></iframe>
+    </div>
+
+    <!-- LIVE MATCHES -->
+    {% if live %}
+    <div class="section-hdr">
+      <div class="section-hdr-title"><span class="status-live">LIVE</span> Live Matches</div>
+      <a href="/matches/">View All →</a>
+    </div>
+    <div class="matches-grid">
+      {% for m in live %}
+      <a href="/match/{{ m.id }}/" class="match-card live-card">
+        <div class="mc-teams">
+          <div class="mc-team">
+            <span class="mc-emoji">{{ m.team1.logo_emoji }}</span>
+            <div class="mc-short">{{ m.team1.short_name }}</div>
+            <div class="mc-score">{{ m.team1_score|default:"—" }}</div>
+          </div>
+          <div class="mc-vs">VS</div>
+          <div class="mc-team">
+            <span class="mc-emoji">{{ m.team2.logo_emoji }}</span>
+            <div class="mc-short">{{ m.team2.short_name }}</div>
+            <div class="mc-score">{{ m.team2_score|default:"YTB" }}</div>
+          </div>
+        </div>
+        <div class="mc-footer">
+          <span>📍 {{ m.venue|truncatechars:30 }}</span>
+          <span class="status-live">LIVE</span>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- UPCOMING -->
+    {% if upcoming %}
+    <div class="section-hdr">
+      <div class="section-hdr-title">📅 Upcoming Matches</div>
+      <a href="/matches/">View All →</a>
+    </div>
+    <div class="matches-grid">
+      {% for m in upcoming %}
+      <a href="/match/{{ m.id }}/" class="match-card">
+        <div class="mc-teams">
+          <div class="mc-team"><span class="mc-emoji">{{ m.team1.logo_emoji }}</span><div class="mc-short">{{ m.team1.short_name }}</div></div>
+          <div class="mc-vs">VS</div>
+          <div class="mc-team"><span class="mc-emoji">{{ m.team2.logo_emoji }}</span><div class="mc-short">{{ m.team2.short_name }}</div></div>
+        </div>
+        <div class="mc-footer">
+          <span>{{ m.match_date|date:"d M, g:i A" }}</span>
+          <span class="status-upcoming">UPCOMING</span>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- RECENT RESULTS -->
+    {% if completed %}
+    <div class="section-hdr">
+      <div class="section-hdr-title">✅ Recent Results</div>
+      <a href="/matches/">View All →</a>
+    </div>
+    <div class="matches-grid">
+      {% for m in completed %}
+      <a href="/match/{{ m.id }}/" class="match-card">
+        <div class="mc-teams">
+          <div class="mc-team"><span class="mc-emoji">{{ m.team1.logo_emoji }}</span><div class="mc-short">{{ m.team1.short_name }}</div><div class="mc-score">{{ m.team1_score }}</div></div>
+          <div class="mc-vs">VS</div>
+          <div class="mc-team"><span class="mc-emoji">{{ m.team2.logo_emoji }}</span><div class="mc-short">{{ m.team2.short_name }}</div><div class="mc-score">{{ m.team2_score }}</div></div>
+        </div>
+        <div class="mc-footer">
+          <span style="color:#d4af37;font-size:0.75rem;">{{ m.result|truncatechars:40 }}</span>
+          <span class="status-completed">DONE</span>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- FAN CHAT HUB -->
+    <div class="section-hdr" style="margin-top:1.5rem;">
+      <div class="section-hdr-title">💬 Fan Chat Hub</div>
+      <div style="display:flex;gap:0.5rem;">
+        <button class="btn-jarvis" style="font-size:0.7rem;padding:0.3rem 0.8rem;" onclick="openCreateRoom()">+ Create Room</button>
+        <a href="/chat/" style="font-size:0.75rem;font-weight:700;color:#1a3a7c;text-decoration:none;align-self:center;">View All →</a>
+      </div>
+    </div>
+    <div class="chat-hub">
+      <div class="btn-create-chat" onclick="openCreateRoom()">
+        <span style="font-size:1.5rem;color:#1a3a7c;">➕</span>
+        <div style="font-weight:700;color:#1a3a7c;font-size:0.85rem;">Create New Room</div>
+        <div style="font-size:0.7rem;color:#9ca3af;">Start a discussion</div>
+      </div>
+      {% for room in rooms %}
+      <a href="/chat/room/{{ room.name }}/" class="chat-card">
+        <span class="chat-icon">💬</span>
+        <div class="chat-name">{{ room.name }}</div>
+        <div class="chat-desc">{{ room.description|truncatechars:60 }}</div>
+      </a>
+      {% empty %}
+      <div style="background:#fff;padding:1.5rem;border-radius:12px;text-align:center;color:#9ca3af;font-size:0.9rem;grid-column:1/-1;">
+        No active chat rooms yet. <a href="/chat/" style="color:#1a3a7c;font-weight:700;">Create one!</a>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- TEAMS -->
+    <div class="section-hdr" style="margin-top:0.5rem;">
+      <div class="section-hdr-title">👥 IPL Teams 2025</div>
+    </div>
+    <div class="teams-strip">
+      {% for team in teams %}
+      <a href="/matches/?team={{ team.short_name }}" class="team-chip">
+        <span class="team-chip-emoji">{{ team.logo_emoji }}</span>
+        <span>{{ team.short_name }}</span>
+      </a>
+      {% endfor %}
+    </div>
+
+    <!-- JARVIS PROMO -->
+    <div class="jarvis-promo">
+      <div class="jarvis-icon">🤖</div>
+      <div>
+        <div class="jarvis-title">MEET JARVIS — YOUR IPL AI</div>
+        <div class="jarvis-desc">Ask anything about IPL — player stats, match predictions, team strategies, or historical records. Powered by Groq Llama 3.1 with personal memory.</div>
+        <a href="/jarvis/" class="btn-jarvis">Chat with Jarvis →</a>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- CREATE ROOM MODAL -->
+<div class="modal-overlay" id="create-room-modal">
+  <div class="modal">
+    <h2 style="margin-bottom:0.5rem;">💬 Create Fan Room</h2>
+    <p style="font-size:0.75rem;color:#6b7280;margin-bottom:1.5rem;">Start a new topic and invite other fans!</p>
+    <div class="form-group">
+      <label>Room Name</label>
+      <input type="text" id="cr-name" placeholder="e.g. MI vs CSK Final Hub">
+    </div>
+    <div class="form-group">
+      <label>Description</label>
+      <input type="text" id="cr-desc" placeholder="What's this room about?">
+    </div>
+    <button class="btn-primary" onclick="submitCreateRoom()">Launch Room 🚀</button>
+    <button class="btn-hero-outline" style="width:100%;margin-top:0.5rem;color:#6b7280;border-color:#e2e8f0;" onclick="closeCreateRoom()">Cancel</button>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function openCreateRoom() {
+  document.getElementById('create-room-modal').classList.add('open');
+  document.getElementById('cr-name').focus();
+}
+function closeCreateRoom() {
+  document.getElementById('create-room-modal').classList.remove('open');
+}
+async function submitCreateRoom() {
+  const name = document.getElementById('cr-name').value.trim();
+  const desc = document.getElementById('cr-desc').value.trim();
+  if(!name) { showToast('Room name required! 🏏'); return; }
+  
+  try {
+    const r = await fetch('/chat/api/create/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+      body: JSON.stringify({ name, description: desc })
+    });
+    const d = await r.json();
+    if(d.room) {
+      showToast('Room created! Redirecting...');
+      setTimeout(() => window.location.href = `/chat/room/${d.room.name}/`, 1000);
+    } else {
+      showToast('Error creating room.');
+    }
+  } catch(e) { showToast('Something went wrong.'); }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,167 @@
+{% extends "base/base.html" %}
+{% block title %}IPL Fans — IPL 2025{% endblock %}
+{% block extra_head %}
+<style>
+.fans-layout{display:grid;grid-template-columns:220px 1fr;min-height:calc(100vh - 130px);}
+.fans-sidebar{background:linear-gradient(180deg,#0f2456,#1a3a7c);padding:1.25rem 0.5rem;}
+.snav-link{display:flex;align-items:center;gap:0.75rem;padding:0.65rem 1rem;color:rgba(255,255,255,0.6);text-decoration:none;font-size:0.85rem;font-weight:500;border-radius:8px;transition:all 0.2s;margin-bottom:0.1rem;}
+.snav-link:hover,.snav-link.active{color:#fff;background:rgba(255,255,255,0.08);}
+.snav-icon{font-size:1rem;width:22px;text-align:center;}
+.fans-content{padding:1.5rem;background:#eef2f7;}
+.fans-header{background:linear-gradient(135deg,#0f2456,#1a3a7c);border-radius:12px;padding:2rem;color:#fff;margin-bottom:1.5rem;text-align:center;}
+.fans-header h1{font-family:'Teko',sans-serif;font-size:2.2rem;letter-spacing:2px;color:#d4af37;margin-bottom:0.5rem;}
+.fans-header p{color:rgba(255,255,255,0.7);font-size:0.95rem;}
+.fan-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1.5rem;}
+.fan-card{background:#fff;border-radius:12px;padding:1.5rem;box-shadow:0 2px 12px rgba(0,0,0,0.08);transition:all 0.3s;border:1px solid #e2e8f0;cursor:pointer;}
+.fan-card:hover{transform:translateY(-8px);box-shadow:0 12px 30px rgba(0,0,0,0.12);border-color:#1a3a7c;}
+.fan-header{display:flex;align-items:center;gap:1rem;margin-bottom:1rem;padding-bottom:1rem;border-bottom:1px solid #f0f4f8;}
+.fan-avatar{width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,#1a3a7c,#d4af37);display:flex;align-items:center;justify-content:center;font-size:2rem;color:#fff;}
+.fan-username{font-size:1.1rem;font-weight:700;color:#1a3a7c;}
+.fan-joindate{font-size:0.75rem;color:#9ca3af;}
+.fan-info{margin-bottom:1rem;}
+.fan-info-row{display:flex;justify-content:space-between;padding:0.5rem 0;border-bottom:1px solid #f9fafb;font-size:0.9rem;}
+.fan-label{color:#9ca3af;font-weight:500;}
+.fan-value{color:#1a3a7c;font-weight:600;}
+.fan-badge{display:inline-block;background:rgba(212,175,55,0.15);color:#92700a;border:1px solid rgba(212,175,55,0.3);padding:0.4rem 0.8rem;border-radius:20px;font-size:0.8rem;font-weight:600;margin-right:0.5rem;margin-bottom:0.5rem;}
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:400px;color:#9ca3af;text-align:center;padding:2rem;}
+.empty-state-icon{font-size:4rem;margin-bottom:1rem;}
+.empty-state-title{font-size:1.3rem;color:#1a3a7c;margin-bottom:0.5rem;}
+.empty-state-text{font-size:0.95rem;}
+.search-box{margin-bottom:2rem;display:flex;gap:0.5rem;}
+.search-box input{flex:1;padding:0.75rem 1rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.95rem;outline:none;transition:border-color 0.2s;}
+.search-box input:focus{border-color:#1a3a7c;}
+.search-box button{background:#1a3a7c;color:#fff;border:none;border-radius:8px;padding:0.75rem 1.5rem;cursor:pointer;font-weight:700;transition:all 0.2s;}
+.search-box button:hover{background:#d4af37;color:#0f2456;}
+</style>
+{% endblock %}
+{% block content %}
+<div class="fans-layout">
+  <div class="fans-sidebar">
+    <a href="/" class="snav-link"><span class="snav-icon">🏠</span>Home</a>
+    <a href="/matches/" class="snav-link"><span class="snav-icon">🏏</span>Matches</a>
+    <a href="/scorecard/" class="snav-link"><span class="snav-icon">📊</span>Scorecard</a>
+    <a href="/history/" class="snav-link"><span class="snav-icon">📈</span>Analysis</a>
+    <a href="/jarvis/" class="snav-link"><span class="snav-icon">🤖</span>Jarvis AI</a>
+    <a href="/chat/" class="snav-link"><span class="snav-icon">💬</span>Fan Chat</a>
+    <a href="/fans/" class="snav-link active"><span class="snav-icon">👥</span>Fans</a>
+  </div>
+
+  <div class="fans-content">
+    <div class="fans-header">
+      <h1>👥 IPL FAN ZONE</h1>
+      <p>Connect with passionate IPL fans around the world</p>
+    </div>
+
+    {% if fan %}
+    <!-- Single Fan Profile View -->
+    <div style="max-width:600px;margin:0 auto;">
+      <div class="fan-card" style="border:2px solid #d4af37;">
+        <div class="fan-header">
+          <div class="fan-avatar">{{ fan.username|first|upper }}</div>
+          <div>
+            <div class="fan-username">{{ fan.username }}</div>
+            <div class="fan-joindate">Joined {{ fan.joined_date|date:"M d, Y" }}</div>
+          </div>
+        </div>
+        {% if fan.bio %}
+        <div style="margin-bottom:1rem;padding:1rem;background:#f0f4f8;border-radius:8px;color:#374151;border-left:3px solid #d4af37;">
+          {{ fan.bio }}
+        </div>
+        {% endif %}
+        <div class="fan-info">
+          {% if fan.favorite_team %}
+          <div class="fan-info-row">
+            <div class="fan-label">🏏 Favorite Team</div>
+            <div class="fan-value">{{ fan.favorite_team }}</div>
+          </div>
+          {% endif %}
+          {% if fan.favorite_player %}
+          <div class="fan-info-row">
+            <div class="fan-label">⭐ Favorite Player</div>
+            <div class="fan-value">{{ fan.favorite_player }}</div>
+          </div>
+          {% endif %}
+          {% if fan.email %}
+          <div class="fan-info-row">
+            <div class="fan-label">📧 Email</div>
+            <div class="fan-value">{{ fan.email }}</div>
+          </div>
+          {% endif %}
+        </div>
+        {% if fan.stats %}
+        <div style="padding-top:1rem;border-top:1px solid #f0f4f8;display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+          <div style="text-align:center;">
+            <div style="font-size:1.5rem;font-weight:700;color:#d4af37;">{{ fan.stats.matches_watched }}</div>
+            <div style="font-size:0.75rem;color:#9ca3af;text-transform:uppercase;letter-spacing:0.5px;">Matches Watched</div>
+          </div>
+          <div style="text-align:center;">
+            <div style="font-size:1.5rem;font-weight:700;color:#d4af37;">{{ fan.stats.reactions_count }}</div>
+            <div style="font-size:0.75rem;color:#9ca3af;text-transform:uppercase;letter-spacing:0.5px;">Reactions</div>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    {% else %}
+    <!-- All Fans Grid -->
+    {% if fans %}
+    <div class="search-box">
+      <input type="text" placeholder="Search fans by username..." id="searchInput" />
+      <button onclick="filterFans()">Search</button>
+    </div>
+    <div class="fan-grid">
+      {% for f in fans %}
+      <a href="/fans/profile/{{ f.username }}/" class="fan-card" style="text-decoration:none;color:inherit;">
+        <div class="fan-header">
+          <div class="fan-avatar">{{ f.username|first|upper }}</div>
+          <div>
+            <div class="fan-username">{{ f.username }}</div>
+            <div class="fan-joindate">Joined {{ f.joined_date|date:"M d, Y" }}</div>
+          </div>
+        </div>
+        {% if f.bio %}
+        <div style="margin-bottom:1rem;padding:0.75rem;background:#f0f4f8;border-radius:6px;font-size:0.9rem;color:#6b7280;line-height:1.4;">
+          {{ f.bio|truncatewords:15 }}
+        </div>
+        {% endif %}
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+          {% if f.favorite_team %}
+          <span class="fan-badge">🏏 {{ f.favorite_team }}</span>
+          {% endif %}
+          {% if f.favorite_player %}
+          <span class="fan-badge">⭐ {{ f.favorite_player }}</span>
+          {% endif %}
+        </div>
+        <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid #f0f4f8;display:flex;justify-content:space-around;text-align:center;font-size:0.85rem;">
+          <div>
+            <div style="font-weight:700;color:#d4af37;">{{ f.stats.reactions_count|default:0 }}</div>
+            <div style="color:#9ca3af;">Reactions</div>
+          </div>
+          {% if f.stats %}
+          <div>
+            <div style="font-weight:700;color:#d4af37;">{{ f.stats.matches_watched }}</div>
+            <div style="color:#9ca3af;">Matches</div>
+          </div>
+          {% endif %}
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <div class="empty-state-icon">👥</div>
+      <div class="empty-state-title">No Fans Found</div>
+      <div class="empty-state-text">Be the first to join the IPL Fan Zone!</div>
+    </div>
+    {% endif %}
+    {% endif %}
+  </div>
+</div>
+
+<script>
+function filterFans() {
+  // Search functionality placeholder
+  alert('Search feature coming soon!');
+}
+</script>
+{% endblock %}

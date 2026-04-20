@@ -1,0 +1,844 @@
+{% extends "base/base.html" %}
+{% block title %}{{ match.team1.short_name }} vs {{ match.team2.short_name }} — Live{% endblock %}
+
+{% block extra_head %}
+<style>
+.match-page{
+  display:grid;grid-template-columns:220px 1fr 340px;
+  min-height:calc(100vh - 130px);
+}
+
+/* SIDEBAR */
+.mp-sidebar{background:linear-gradient(180deg,#0f2456,#1a3a7c);padding:1.25rem 0.5rem;}
+.snav-link{display:flex;align-items:center;gap:0.75rem;padding:0.65rem 1rem;color:rgba(255,255,255,0.6);text-decoration:none;font-size:0.85rem;font-weight:500;border-radius:8px;transition:all 0.2s;margin-bottom:0.1rem;}
+.snav-link:hover,.snav-link.active{color:#fff;background:rgba(255,255,255,0.08);}
+.snav-icon{font-size:1rem;width:22px;text-align:center;}
+
+/* MAIN */
+.mp-main{padding:1.25rem;background:#eef2f7;overflow-y:auto;}
+
+/* SCOREBOARD */
+.scoreboard{
+  background:#fff;border-radius:12px;
+  box-shadow:0 2px 12px rgba(0,0,0,0.08);
+  margin-bottom:1.25rem;overflow:hidden;
+}
+
+.sb-top{
+  background:linear-gradient(135deg,#0f2456,#1a3a7c);
+  padding:0.75rem 1.25rem;
+  display:flex;justify-content:space-between;align-items:center;
+}
+
+.sb-venue{font-size:0.78rem;color:rgba(255,255,255,0.6);}
+
+.sb-teams{
+  padding:1.5rem;
+  display:grid;grid-template-columns:1fr auto 1fr;
+  gap:1rem;align-items:center;
+}
+
+.sb-team{display:flex;align-items:center;gap:0.75rem;}
+.sb-team.right{flex-direction:row-reverse;text-align:right;}
+
+.sb-emoji{font-size:2.5rem;}
+.sb-short{font-family:'Teko',sans-serif;font-size:1.5rem;letter-spacing:2px;font-weight:600;}
+.sb-score{font-family:'Barlow Condensed',sans-serif;font-size:1.8rem;font-weight:800;color:#d4af37;}
+.sb-overs{font-size:0.75rem;color:#9ca3af;}
+.sb-vs{font-family:'Teko',sans-serif;font-size:2rem;color:#cbd5e0;text-align:center;}
+
+.sb-result{
+  background:#f0f4f8;text-align:center;
+  padding:0.6rem;font-weight:700;font-size:0.9rem;color:#1a3a7c;
+  border-top:1px solid #e2e8f0;
+}
+
+/* CANVAS */
+.ground-box{
+  background:#fff;border-radius:12px;
+  box-shadow:0 2px 12px rgba(0,0,0,0.08);
+  margin-bottom:1.25rem;overflow:hidden;
+}
+
+.ground-header{
+  padding:0.75rem 1.25rem;
+  background:#0f2456;
+  display:flex;justify-content:space-between;align-items:center;
+  font-size:0.82rem;font-weight:700;letter-spacing:0.5px;
+  text-transform:uppercase;color:rgba(255,255,255,0.8);
+}
+
+#cricket-canvas{width:100%;height:340px;display:block;background:#0a1a0a;}
+
+.event-row{
+  padding:0.85rem 1.25rem;
+  display:flex;align-items:center;gap:1rem;
+  border-top:1px solid #f0f4f8;
+}
+
+#evt-badge{
+  font-family:'Teko',sans-serif;font-size:2.2rem;font-weight:700;
+  min-width:60px;text-align:center;transition:all 0.3s;
+  color:#9ca3af;
+}
+
+#evt-text{flex:1;font-size:0.9rem;color:#6b7280;font-style:italic;line-height:1.4;}
+
+/* OVER BALLS */
+.over-row{
+  background:#fff;border-radius:12px;
+  padding:1rem 1.25rem;
+  margin-bottom:1.25rem;
+  box-shadow:0 2px 8px rgba(0,0,0,0.05);
+}
+
+.over-title{font-size:0.72rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#9ca3af;margin-bottom:0.65rem;}
+.balls-row{display:flex;gap:0.4rem;flex-wrap:wrap;}
+
+.ball-dot{
+  width:34px;height:34px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:0.78rem;font-weight:700;
+  font-family:'Barlow Condensed',sans-serif;
+}
+
+.b0{background:#f0f4f8;color:#9ca3af;}
+.b1,.b2,.b3{background:rgba(26,58,124,0.1);color:#1a3a7c;border:1px solid rgba(26,58,124,0.2);}
+.b4{background:rgba(34,197,94,0.12);color:#15803d;border:1px solid rgba(34,197,94,0.3);}
+.b6{background:rgba(212,175,55,0.15);color:#92700a;border:1px solid rgba(212,175,55,0.4);}
+.bW{background:rgba(230,57,70,0.12);color:#c91a27;border:1px solid rgba(230,57,70,0.3);}
+
+/* FANZONE INSIGHTS */
+.fz-section{padding:1.25rem;border-bottom:1px solid #f0f4f8;flex:1;display:flex;flex-direction:column;max-height:350px;}
+.fz-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;}
+.fz-title{font-size:0.75rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#1a3a7c;}
+.fz-feed{flex:1;overflow-y:auto;padding-right:0.5rem;margin-bottom:1rem;}
+.insight-card{background:#f8fafc;border-radius:10px;padding:0.75rem;margin-bottom:0.75rem;border-left:3px solid #cbd5e0;transition:all 0.2s;}
+.insight-card:hover{transform:translateX(4px);background:#fff;box-shadow:0 4px 12px rgba(0,0,0,0.04);}
+.insight-meta{display:flex;justify-content:space-between;font-size:0.68rem;color:#9ca3af;margin-bottom:0.4rem;}
+.insight-user{font-weight:700;color:#374151;}
+.insight-content{font-size:0.82rem;color:#4b5563;line-height:1.4;}
+.insight-tag{font-size:0.62rem;padding:2px 6px;border-radius:4px;font-weight:700;text-transform:uppercase;margin-left:6px;}
+.tag-tactical{background:#eef2ff;color:#4338ca;}
+
+.fz-input-box{background:#fff;border:1.5px solid #e2e8f0;border-radius:12px;padding:0.75rem;transition:border-color 0.2s;}
+.fz-input-box:focus-within{border-color:#1a3a7c;}
+.fz-input-box textarea{width:100%;border:none;outline:none;font-size:0.85rem;resize:none;font-family:inherit;min-height:50px;color:#1a1a2e;background:transparent;}
+.fz-input-actions{display:flex;justify-content:space-between;align-items:center;margin-top:0.5rem;}
+.fz-post-btn{background:#1a3a7c;color:#fff;border:none;border-radius:8px;padding:0.4rem 1rem;font-size:0.78rem;font-weight:700;cursor:pointer;transition:all 0.2s;}
+.fz-post-btn:hover{background:#d4af37;color:#0f2456;}
+
+/* LIVE FAN HUB (Communication House) */
+.hub-section{padding:1.25rem;background:#fdfdfd;flex:1.5;display:flex;flex-direction:column;border-bottom:1px solid #f0f4f8;}
+.hub-chat{flex:1;overflow-y:auto;margin-bottom:1rem;display:flex;flex-direction:column;gap:0.5rem;}
+.chat-msg{font-size:0.82rem;padding:0.5rem 0.75rem;border-radius:8px;max-width:85%;}
+.chat-msg.mine{align-self:flex-end;background:#eef2ff;color:#1a3a7c;border-bottom-right-radius:0;}
+.chat-msg.other{align-self:flex-start;background:#f1f5f9;color:#475569;border-bottom-left-radius:0;}
+.chat-user{font-size:0.65rem;font-weight:700;margin-bottom:2px;display:block;}
+
+.hub-input{display:flex;gap:0.5rem;background:#fff;border:1.5px solid #e2e8f0;border-radius:24px;padding:0.35rem 0.5rem 0.35rem 1rem;}
+.hub-input input{flex:1;border:none;outline:none;font-size:0.85rem;color:#1a1a2e;}
+.hub-send{background:#1a3a7c;color:#fff;border:none;border-radius:50%;width:32px;height:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+
+/* INTENSITY METER */
+.intensity-box{padding:1rem;background:#f8fafc;border-bottom:1px solid #f0f4f8;}
+.intensity-label{font-size:0.65rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#9ca3af;margin-bottom:0.75rem;display:block;}
+.intensity-bars{display:flex;gap:4px;height:24px;align-items:flex-end;}
+.intensity-bar{flex:1;background:#e2e8f0;border-radius:2px 2px 0 0;transition:all 0.5s ease;}
+.intensity-bar.active-t1{background:var(--t1-color,#0f2456);}
+.intensity-bar.active-t2{background:var(--t2-color,#d4af37);}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="match-page">
+
+  <!-- SIDEBAR -->
+  <div class="mp-sidebar">
+    <a href="/" style="display:block;padding:0.5rem 1rem;color:rgba(255,255,255,0.5);text-decoration:none;font-size:0.78rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:0.75rem;">← ALL MATCHES</a>
+    <a href="/" class="snav-link"><span class="snav-icon">🏠</span>Home</a>
+    <a href="/matches/" class="snav-link active"><span class="snav-icon">🏏</span>Matches</a>
+    <a href="/scorecard/" class="snav-link"><span class="snav-icon">📊</span>Scorecard</a>
+    <a href="/history/" class="snav-link"><span class="snav-icon">📈</span>Analysis</a>
+    <a href="/jarvis/" class="snav-link"><span class="snav-icon">🤖</span>Jarvis AI</a>
+    <hr style="border:none;border-top:1px solid rgba(255,255,255,0.06);margin:1rem 0.5rem;">
+    <div style="padding:0 0.75rem;font-size:0.68rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.25);margin-bottom:0.5rem;">Match Status</div>
+    <div style="padding:0.5rem 1rem;">
+      <span class="{% if match.status == 'live' %}status-live{% elif match.status == 'upcoming' %}status-upcoming{% else %}status-completed{% endif %}" style="font-size:0.75rem;">{{ match.status|upper }}</span>
+    </div>
+    <div style="margin-top:1rem;padding:0 0.75rem;">
+      <div style="font-size:0.65rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.25);margin-bottom:0.5rem;">Quick Reactions</div>
+      <div style="display:flex;flex-direction:column;gap:0.35rem;">
+        <button onclick="doReact('fire')" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:0.4rem 0.6rem;color:#fff;cursor:pointer;text-align:left;font-size:0.82rem;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.12)'" onmouseout="this.style.background='rgba(255,255,255,0.06)'">🔥 Fire!</button>
+        <button onclick="doReact('six')" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:0.4rem 0.6rem;color:#fff;cursor:pointer;text-align:left;font-size:0.82rem;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.12)'" onmouseout="this.style.background='rgba(255,255,255,0.06)'">⚡ SIX!</button>
+        <button onclick="doReact('wicket')" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:0.4rem 0.6rem;color:#fff;cursor:pointer;text-align:left;font-size:0.82rem;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.12)'" onmouseout="this.style.background='rgba(255,255,255,0.06)'">🎯 Wicket!</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="mp-main">
+
+    <!-- SCOREBOARD -->
+    <div class="scoreboard">
+      <div class="sb-top">
+        <span class="sb-venue">📍 {{ match.venue }}</span>
+        <span class="{% if match.status == 'live' %}status-live{% elif match.status == 'upcoming' %}status-upcoming{% else %}status-completed{% endif %}">{{ match.status|upper }}</span>
+      </div>
+      <div class="sb-teams">
+        <div class="sb-team">
+          <span class="sb-emoji">{{ match.team1.logo_emoji }}</span>
+          <div>
+            <div class="sb-short" style="color:{{ match.team1.color_primary }}">{{ match.team1.short_name }}</div>
+            <div class="sb-score" id="score-t1">{{ match.team1_score|default:"—" }}</div>
+            <div class="sb-overs" id="overs-t1">{% if match.team1_overs %}({{ match.team1_overs }} ov){% endif %}</div>
+          </div>
+        </div>
+        <div class="sb-vs">VS</div>
+        <div class="sb-team right">
+          <span class="sb-emoji">{{ match.team2.logo_emoji }}</span>
+          <div>
+            <div class="sb-short" style="color:{{ match.team2.color_primary }}">{{ match.team2.short_name }}</div>
+            <div class="sb-score" id="score-t2">{{ match.team2_score|default:"YTB" }}</div>
+            <div class="sb-overs" id="overs-t2">{% if match.team2_overs %}({{ match.team2_overs }} ov){% endif %}</div>
+          </div>
+        </div>
+      </div>
+      {% if match.result %}<div class="sb-result" id="sb-result">{{ match.result }}</div>{% endif %}
+    </div>
+
+    <!-- 3D GROUND -->
+    <div class="ground-box">
+      <div class="ground-header">
+        <span>🏟️ 3D LIVE GROUND VIEW</span>
+        <span style="color:rgba(212,175,55,0.9);font-size:0.75rem;" id="anim-label">● ANIMATING</span>
+      </div>
+      <canvas id="cricket-canvas"></canvas>
+      <div class="event-row">
+        <div id="evt-badge">—</div>
+        <div id="evt-text">Waiting for ball-by-ball data...</div>
+      </div>
+    </div>
+
+    <!-- THIS OVER -->
+    <div class="over-row">
+      <div class="over-title">⚾ This Over</div>
+      <div class="balls-row" id="balls-row">
+        <div style="color:#9ca3af;font-size:0.82rem;padding:0.5rem 0;">Ball-by-ball events appear here during live match</div>
+      </div>
+    </div>
+
+    <!-- REACTIONS -->
+    <div class="reactions-box">
+      <div class="over-title" style="margin-bottom:0.65rem;">💬 Fan Reactions</div>
+      <div class="rxn-grid">
+        <button class="rxn-btn" onclick="doReact('fire')"><span class="rxn-emoji">🔥</span><span>Fire</span><span class="rxn-count" id="rxn-fire">{{ reactions.fire|default:0 }}</span></button>
+        <button class="rxn-btn" onclick="doReact('six')"><span class="rxn-emoji">6️⃣</span><span>Six!</span><span class="rxn-count" id="rxn-six">{{ reactions.six|default:0 }}</span></button>
+        <button class="rxn-btn" onclick="doReact('wicket')"><span class="rxn-emoji">🎯</span><span>Wicket</span><span class="rxn-count" id="rxn-wicket">{{ reactions.wicket|default:0 }}</span></button>
+        <button class="rxn-btn" onclick="doReact('heart')"><span class="rxn-emoji">❤️</span><span>Love</span><span class="rxn-count" id="rxn-heart">{{ reactions.heart|default:0 }}</span></button>
+        <button class="rxn-btn" onclick="doReact('wow')"><span class="rxn-emoji">😮</span><span>Wow</span><span class="rxn-count" id="rxn-wow">{{ reactions.wow|default:0 }}</span></button>
+        <button class="rxn-btn" onclick="doReact('sad')"><span class="rxn-emoji">😢</span><span>Sad</span><span class="rxn-count" id="rxn-sad">{{ reactions.sad|default:0 }}</span></button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="mp-right">
+    <div class="rp-header"><span>📊</span> MATCH DASHBOARD</div>
+
+    <!-- INTENSITY METER -->
+    <div class="intensity-box">
+      <span class="intensity-label">🔥 Fan Zone Intensity</span>
+      <div class="intensity-bars" id="intensity-bars">
+        {% for i in "12345678901234567890" %}
+          <div class="intensity-bar" style="height:{% cycle '20' '40' '60' '80' '100' '70' '50' '90' '30' '10' %}%"></div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- LIVE FAN HUB (Communication House) -->
+    <div class="hub-section">
+      <div class="fz-header">
+        <span class="fz-title">🏠 Live Fan Hub</span>
+        <span id="hub-online" style="font-size:0.6rem;color:#22c55e;">● 24 fans active</span>
+      </div>
+      <div class="hub-chat" id="hub-chat">
+        <div class="chat-msg other"><span class="chat-user">@CricketGuru</span>Exciting match! Who's winning today?</div>
+        <div class="chat-msg other"><span class="chat-user">@MI_Fan_1</span>Mumbai looking strong at Wankhede! 🦁</div>
+      </div>
+      <div class="hub-input">
+        <input type="text" id="hub-inp" placeholder="Type a message..." onkeydown="if(event.key==='Enter')sendHubMsg()">
+        <button class="hub-send" onclick="sendHubMsg()">➤</button>
+      </div>
+    </div>
+
+    <!-- FANZONE FEED -->
+    <div class="fz-section">
+      <div class="fz-header">
+        <span class="fz-title">🗣️ Fan Insights</span>
+        <span style="font-size:0.65rem;color:#9ca3af;">{{ insights|length }} posts</span>
+      </div>
+      <div class="fz-feed" id="fz-feed">
+        {% for i in insights %}
+          <div class="insight-card" style="border-left-color:{% if i.team %}{{ i.team.color_primary }}{% else %}#cbd5e0{% endif %}">
+            <div class="insight-meta">
+              <span class="insight-user">@{{ i.username }}</span>
+              <span>{{ i.created_at|date:"H:i" }}</span>
+            </div>
+            <div class="insight-content">
+              {{ i.content }}
+              {% if i.is_tactical %}<span class="insight-tag tag-tactical">Tactical</span>{% endif %}
+            </div>
+          </div>
+        {% empty %}
+          <div style="text-align:center;padding:2rem;color:#9ca3af;font-size:0.82rem;">
+            No insights yet. Be the first to share!
+          </div>
+        {% endfor %}
+      </div>
+
+      <div class="fz-input-box">
+        <textarea id="fz-inp" placeholder="Share a tactical insight or cheer..."></textarea>
+        <div class="fz-input-actions">
+          <label style="font-size:0.7rem;color:#6b7280;display:flex;align-items:center;gap:4px;cursor:pointer;">
+            <input type="checkbox" id="fz-tactical"> 🧠 Tactical
+          </label>
+          <button class="fz-post-btn" onclick="postInsight()">Post Insight</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PREDICTION -->
+    <div class="pred-section">
+      <div class="pred-title">🔮 Crowd Prediction</div>
+      <div class="pred-btns">
+        <button class="pred-btn" id="pred-t1" onclick="doPred({{ match.team1.id }}, 't1')">{{ match.team1.logo_emoji }} {{ match.team1.short_name }}</button>
+        <button class="pred-btn" id="pred-t2" onclick="doPred({{ match.team2.id }}, 't2')">{{ match.team2.logo_emoji }} {{ match.team2.short_name }}</button>
+      </div>
+      <div class="pred-bar"><div class="pred-fill" id="pred-fill" style="width:50%"></div></div>
+      <div class="pred-nums">
+        <span id="p-pct-t1">50%</span>
+        <span id="p-total" style="color:#9ca3af;">Predicted by fans</span>
+        <span id="p-pct-t2">50%</span>
+      </div>
+    </div>
+
+    <!-- LIVE CRICTIMES EMBED -->
+    <div style="flex:1;overflow:hidden;border-top:1px solid #f0f4f8;">
+      <div style="padding:0.65rem 1rem;background:#f8fafc;font-size:0.72rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#9ca3af;border-bottom:1px solid #f0f4f8;">🔴 Live Scores Widget</div>
+      <iframe src="https://bwidget.crictimes.org/" style="width:100%;height:220px;display:block;border:none;" scrolling="yes"></iframe>
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+const MATCH_ID = {{ match.id }};
+const T1_COLOR = "{{ match.team1.color_primary }}";
+const T2_COLOR = "{{ match.team2.color_primary }}";
+const T1_NAME = "{{ match.team1.short_name }}";
+const T2_NAME = "{{ match.team2.short_name }}";
+const MATCH_STATUS = "{{ match.status }}";
+
+// ═══════════════════════════════════════════
+// 3D CRICKET GROUND CANVAS
+// ═══════════════════════════════════════════
+const canvas = document.getElementById('cricket-canvas');
+const ctx = canvas.getContext('2d');
+
+function resize() {
+  canvas.width = canvas.offsetWidth;
+  canvas.height = canvas.offsetHeight || 340;
+}
+resize();
+window.addEventListener('resize', resize);
+
+const G = {
+  ball: { x: 0, y: 0, vx: 0, vy: 0, z: 0, active: false },
+  particles: [],
+  crowd: Array.from({length: 100}, () => ({
+    angle: Math.random() * Math.PI * 2,
+    r: 0.92 + Math.random() * 0.1,
+    color: `hsl(${Math.random()*360},70%,65%)`,
+    wave: Math.random() * Math.PI * 2,
+  })),
+  frame: 0,
+  lastEvent: null,
+};
+
+function drawScene() {
+  const W = canvas.width, H = canvas.height;
+  const cx = W / 2, cy = H * 0.54;
+
+  // Sky
+  const sky = ctx.createLinearGradient(0, 0, 0, H);
+  sky.addColorStop(0, '#05091a');
+  sky.addColorStop(0.6, '#0f1f3d');
+  sky.addColorStop(1, '#0a1a08');
+  ctx.fillStyle = sky;
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.save();
+  ctx.translate(cx, cy);
+
+  // Outfield
+  const gGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, W * 0.44);
+  gGrad.addColorStop(0, '#1e6b1e');
+  gGrad.addColorStop(0.55, '#175217');
+  gGrad.addColorStop(0.85, '#102e10');
+  gGrad.addColorStop(1, '#0a1f0a');
+  ctx.fillStyle = gGrad;
+  ctx.beginPath();
+  ctx.ellipse(0, 0, W * 0.44, H * 0.4, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Mow stripes
+  for (let i = 0; i < 9; i++) {
+    ctx.fillStyle = i % 2 === 0 ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.025)';
+    const r1x = W * 0.44 * i / 9, r1y = H * 0.4 * i / 9;
+    const r2x = W * 0.44 * (i + 1) / 9, r2y = H * 0.4 * (i + 1) / 9;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, r2x, r2y, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, 0, r1x, r1y, 0, Math.PI * 2, 0, true);
+    ctx.fill();
+  }
+
+  // Boundary ring
+  ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([8, 6]);
+  ctx.beginPath();
+  ctx.ellipse(0, 0, W * 0.44, H * 0.4, 0, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // 30-yard circle
+  ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([5, 5]);
+  ctx.beginPath();
+  ctx.ellipse(0, 0, W * 0.22, H * 0.2, 0, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Pitch
+  const pw = W * 0.04, ph = H * 0.22;
+  ctx.shadowColor = 'rgba(200,175,110,0.3)';
+  ctx.shadowBlur = 12;
+  ctx.fillStyle = '#c8a87a';
+  ctx.fillRect(-pw / 2, -ph / 2, pw, ph);
+  ctx.shadowBlur = 0;
+
+  // Crease lines
+  ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+  ctx.lineWidth = 1.5;
+  [-0.35, 0.35].forEach(t => {
+    ctx.beginPath();
+    ctx.moveTo(-pw * 0.8, ph * t);
+    ctx.lineTo(pw * 0.8, ph * t);
+    ctx.stroke();
+  });
+
+  // Stumps
+  drawStumps(ctx, 0, -ph * 0.35, pw * 0.5);
+  drawStumps(ctx, 0, ph * 0.35, pw * 0.5);
+
+  ctx.restore();
+
+  // Floodlights
+  [[0.06, 0.06], [0.5, 0.02], [0.94, 0.06], [0.12, 0.9], [0.88, 0.9]].forEach(([px, py]) => {
+    drawFloodlight(ctx, W * px, H * py, W, H, cx, cy);
+  });
+
+  // Crowd
+  G.frame++;
+  G.crowd.forEach(fan => {
+    const x = cx + Math.cos(fan.angle) * W * 0.46 * fan.r;
+    const y = cy + Math.sin(fan.angle) * H * 0.41 * fan.r;
+    const wave = (Math.sin(G.frame * 0.025 + fan.wave) * 0.5 + 0.5);
+    ctx.globalAlpha = 0.35 + wave * 0.45;
+    ctx.fillStyle = fan.color;
+    ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 1;
+  });
+
+  // Fielders
+  [[-0.28, 0], [-0.16, -0.18], [0.16, -0.18], [0.28, 0.08],
+   [-0.28, 0.08], [0.2, 0.26], [-0.2, 0.26], [0.1, 0.35], [-0.1, 0.35]
+  ].forEach(([fx, fy]) => {
+    ctx.fillStyle = '#fff';
+    ctx.shadowColor = 'rgba(255,255,255,0.4)';
+    ctx.shadowBlur = 8;
+    ctx.beginPath();
+    ctx.arc(cx + fx * W * 0.85, cy + fy * H * 0.8, 4.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  });
+
+  // Ball
+  if (G.ball.active) {
+    G.ball.x += G.ball.vx;
+    G.ball.y += G.ball.vy;
+    G.ball.vx *= 0.987;
+    G.ball.vy *= 0.987;
+    G.ball.z = Math.max(0, G.ball.z - 0.015);
+
+    const bx = cx + G.ball.x * W * 0.42;
+    const by = cy + G.ball.y * H * 0.38;
+    const sz = 7 + G.ball.z * 14;
+
+    // Shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.25)';
+    ctx.beginPath();
+    ctx.ellipse(bx, by + sz * 0.5, sz * 0.7, sz * 0.22, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Ball
+    const bg = ctx.createRadialGradient(bx - sz * 0.25, by - sz * 0.25, 0, bx, by, sz);
+    bg.addColorStop(0, '#e85050'); bg.addColorStop(0.6, '#c01010'); bg.addColorStop(1, '#7a0000');
+    ctx.fillStyle = bg;
+    ctx.shadowColor = 'rgba(220,20,20,0.6)';
+    ctx.shadowBlur = 12 + G.ball.z * 18;
+    ctx.beginPath(); ctx.arc(bx, by, sz, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // Trail particle
+    G.particles.push({ type: 'trail', x: bx, y: by, alpha: 0.4, sz: sz * 0.45 });
+
+    if (Math.abs(G.ball.vx) < 0.003 && Math.abs(G.ball.vy) < 0.003) G.ball.active = false;
+  }
+
+  // Particles
+  G.particles = G.particles.filter(p => p.alpha > 0.01);
+  G.particles.forEach(p => {
+    if (p.type === 'trail') {
+      ctx.fillStyle = `rgba(200,40,40,${p.alpha})`;
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.sz, 0, Math.PI * 2); ctx.fill();
+      p.alpha *= 0.82; p.sz *= 0.9;
+    } else if (p.type === 'spark') {
+      ctx.fillStyle = `rgba(${p.r},${p.g},${p.b},${p.alpha})`;
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.sz, 0, Math.PI * 2); ctx.fill();
+      p.x += p.vx; p.y += p.vy; p.vy += 0.12;
+      p.alpha -= 0.022; p.sz *= 0.96;
+    } else if (p.type === 'text') {
+      ctx.font = `bold ${p.fs}px 'Teko',sans-serif`;
+      ctx.fillStyle = `rgba(${p.r},${p.g},${p.b},${p.alpha})`;
+      ctx.textAlign = 'center';
+      ctx.shadowColor = `rgba(${p.r},${p.g},${p.b},0.4)`;
+      ctx.shadowBlur = 15;
+      ctx.fillText(p.text, p.x, p.y);
+      ctx.shadowBlur = 0; ctx.textAlign = 'left';
+      p.y -= 1.8; p.alpha -= 0.018; p.fs = Math.min(p.fs + 0.6, 90);
+    }
+  });
+
+  // Score HUD
+  drawScoreHUD(ctx, W, H);
+
+  requestAnimationFrame(drawScene);
+}
+
+function drawStumps(ctx, x, y, w) {
+  ctx.fillStyle = '#ede0b0';
+  const gap = w / 3;
+  for (let i = -1; i <= 1; i++) {
+    ctx.fillRect(x + i * gap - 1.5, y - 10, 3, 20);
+  }
+  ctx.fillStyle = 'rgba(255,255,200,0.9)';
+  ctx.fillRect(x - w / 2, y - 10, w, 2.5);
+  ctx.fillRect(x - w / 2, y + 1, w, 2.5);
+}
+
+function drawFloodlight(ctx, x, y, W, H, cx, cy) {
+  ctx.fillStyle = '#666';
+  ctx.fillRect(x - 3, y, 6, H * 0.07);
+  ctx.fillStyle = '#fffef0';
+  ctx.shadowColor = 'rgba(255,255,200,0.7)';
+  ctx.shadowBlur = 18;
+  ctx.fillRect(x - 14, y, 28, 6);
+  ctx.shadowBlur = 0;
+  const lg = ctx.createRadialGradient(x, y, 0, cx, cy, W * 0.45);
+  lg.addColorStop(0, 'rgba(255,255,200,0.055)');
+  lg.addColorStop(1, 'rgba(255,255,200,0)');
+  ctx.save();
+  ctx.fillStyle = lg;
+  ctx.beginPath();
+  ctx.moveTo(x - 14, y + 6);
+  ctx.lineTo(cx - W * 0.44, cy);
+  ctx.lineTo(cx + W * 0.44, cy);
+  ctx.lineTo(x + 14, y + 6);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawScoreHUD(ctx, W, H) {
+  const t1s = document.getElementById('score-t1')?.textContent || '—';
+  const t2s = document.getElementById('score-t2')?.textContent || '—';
+  ctx.fillStyle = 'rgba(0,0,0,0.65)';
+  roundRect(ctx, 10, H - 58, 155, 46, 8); ctx.fill();
+  ctx.fillStyle = T1_COLOR; ctx.fillRect(10, H - 58, 4, 46);
+  ctx.fillStyle = '#fff'; ctx.font = "bold 12px 'Barlow',sans-serif"; ctx.fillText(T1_NAME, 20, H - 40);
+  ctx.font = "bold 15px 'Barlow Condensed',sans-serif"; ctx.fillStyle = '#d4af37'; ctx.fillText(t1s, 20, H - 22);
+  ctx.fillStyle = 'rgba(0,0,0,0.65)';
+  roundRect(ctx, W - 165, H - 58, 155, 46, 8); ctx.fill();
+  ctx.fillStyle = T2_COLOR; ctx.fillRect(W - 14, H - 58, 4, 46);
+  ctx.fillStyle = '#fff'; ctx.font = "bold 12px 'Barlow',sans-serif";
+  ctx.textAlign = 'right'; ctx.fillText(T2_NAME, W - 20, H - 40);
+  ctx.font = "bold 15px 'Barlow Condensed',sans-serif"; ctx.fillStyle = '#d4af37'; ctx.fillText(t2s, W - 20, H - 22);
+  ctx.textAlign = 'left';
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y); ctx.arcTo(x + w, y, x + w, y + r, r);
+  ctx.lineTo(x + w, y + h - r); ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+  ctx.lineTo(x + r, y + h); ctx.arcTo(x, y + h, x, y + h - r, r);
+  ctx.lineTo(x, y + r); ctx.arcTo(x, y, x + r, y, r); ctx.closePath();
+}
+
+function triggerEvent(evt) {
+  const W = canvas.width, H = canvas.height;
+  const cx = W / 2, cy = H * 0.54;
+  let angle, speed, z, rr, gg, bb, label, commText;
+
+  switch (evt) {
+    case '6':
+      angle = (Math.random() - 0.5) * Math.PI * 0.7; speed = 0.085; z = 2.8;
+      rr=212; gg=175; bb=55; label='⚡ SIX!'; commText='Massive hit! Into the stands for a maximum! 🔥';
+      break;
+    case '4':
+      angle = (Math.random() - 0.5) * Math.PI * 0.6; speed = 0.065; z = 1.2;
+      rr=34; gg=197; bb=94; label='💚 FOUR!'; commText='Racing to the boundary! Cracking stroke! 💚';
+      break;
+    case 'W':
+      angle = Math.PI * (0.38 + Math.random() * 0.24); speed = 0.04; z = 0.5;
+      rr=230; gg=57; bb=70; label='🎯 OUT!'; commText='Bowled / Caught! Another wicket falls! 🎯';
+      break;
+    case '0':
+      angle = (Math.random() - 0.5) * 0.3; speed = 0.02; z = 0.4;
+      rr=150; gg=150; bb=150; label='● dot'; commText='Excellent line. Dot ball — pressure building.';
+      break;
+    default:
+      angle = (Math.random() - 0.5) * Math.PI * 0.4; speed = 0.025 + parseInt(evt) * 0.01; z = 0.9;
+      rr=26; gg=58; bb=124; label=`${evt} run${evt!='1'?'s':''}`; commText=`Good running! ${evt} run${evt!='1'?'s':''} added.`;
+  }
+
+  G.ball.x = 0; G.ball.y = 0.12;
+  G.ball.vx = Math.sin(angle) * speed;
+  G.ball.vy = -Math.cos(angle) * speed;
+  G.ball.z = z; G.ball.active = true;
+
+  const sparks = evt === '6' ? 50 : evt === '4' ? 30 : evt === 'W' ? 35 : 12;
+  for (let i = 0; i < sparks; i++) {
+    const sa = Math.random() * Math.PI * 2, sv = 2 + Math.random() * 5;
+    G.particles.push({ type:'spark', x:cx, y:cy, vx:Math.cos(sa)*sv, vy:Math.sin(sa)*sv-2.5, r:rr, g:gg, b:bb, alpha:1, sz:3+Math.random()*4 });
+  }
+  G.particles.push({ type:'text', x:W/2, y:H*0.32, text: evt==='6'?'SIX!':evt==='4'?'FOUR!':evt==='W'?'OUT!':evt, r:rr, g:gg, b:bb, alpha:1, fs:50 });
+
+  const badge = document.getElementById('evt-badge');
+  const txtEl = document.getElementById('evt-text');
+  const colors = {'6':'#d4af37','4':'#22c55e','W':'#e63946','0':'#9ca3af'};
+  badge.textContent = label;
+  badge.style.color = colors[evt] || '#1a3a7c';
+  txtEl.textContent = commText;
+
+  // Add ball dot to over row
+  const row = document.getElementById('balls-row');
+  if (row.querySelector('div[style]')) row.innerHTML = '';
+  const dot = document.createElement('div');
+  const cls = evt === 'W' ? 'bW' : `b${evt}`;
+  dot.className = `ball-dot ${cls}`;
+  dot.textContent = evt;
+  row.appendChild(dot);
+  if (row.children.length > 8) row.removeChild(row.firstChild);
+
+  G.lastEvent = evt;
+}
+
+drawScene();
+
+// ── Demo auto-animation ──
+const demoSeq = ['1','4','0','6','1','2','W','0','4','1','6','0','1','3'];
+let demoIdx = 0;
+const demoTimer = setInterval(() => {
+  triggerEvent(demoSeq[demoIdx++ % demoSeq.length]);
+}, 4000);
+
+// ── Live polling ──
+async function pollLive() {
+  try {
+    const r = await fetch(`/match/${MATCH_ID}/api/`);
+    const d = await r.json();
+    if (d.team1?.score) document.getElementById('score-t1').textContent = d.team1.score;
+    if (d.team2?.score) document.getElementById('score-t2').textContent = d.team2.score;
+    
+    // Update animation with live data
+    if (d.commentary) {
+      const txtEl = document.getElementById('evt-text');
+      txtEl.textContent = d.commentary;
+    }
+    
+    if (d.running) {
+      const badge = document.getElementById('evt-badge');
+      badge.textContent = d.running.toUpperCase();
+    }
+
+    if (d.last_event && d.last_event !== G.lastEvent) {
+      clearInterval(demoTimer);
+      triggerEvent(d.last_event);
+    }
+    
+    if (d.reactions) {
+      Object.entries(d.reactions).forEach(([k, v]) => {
+        const el = document.getElementById(`rxn-${k}`);
+        if (el) el.textContent = v;
+      });
+    }
+  } catch (e) {}
+}
+if (MATCH_STATUS === 'live') setInterval(pollLive, 8000);
+
+// ── Reactions ──
+async function doReact(type) {
+  const username = window.FZ.name || 'Anonymous';
+  try {
+    const r = await fetch(`/match/${MATCH_ID}/react/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+      body: JSON.stringify({ reaction: type, username })
+    });
+    const d = await r.json();
+    if (d.count !== undefined) document.getElementById(`rxn-${type}`).textContent = d.count;
+  } catch (e) {
+    const el = document.getElementById(`rxn-${type}`);
+    if (el) el.textContent = parseInt(el.textContent || 0) + 1;
+  }
+  showToast({ fire:'🔥 Fire!', six:'⚡ SIX!', wicket:'🎯 Wicket!', heart:'❤️ Love!', wow:'😮 Wow!', sad:'😢 Sad' }[type] || '✓');
+}
+
+// ── Prediction ──
+let predTotal = 0;
+async function doPred(teamId, side) {
+  document.querySelectorAll('.pred-btn').forEach(b => b.classList.remove('sel'));
+  document.getElementById(`pred-${side}`).classList.add('sel');
+  predTotal++;
+  const pct = side === 't1' ? 60 : 40;
+  document.getElementById('pred-fill').style.width = pct + '%';
+  document.getElementById('p-pct-t1').textContent = pct + '%';
+  document.getElementById('p-pct-t2').textContent = (100 - pct) + '%';
+  document.getElementById('p-total').textContent = predTotal + ' fans predicted';
+  showToast('Prediction locked! 🔮');
+}
+
+// ── Jarvis AI ──
+async function askJarvis() {
+  const inp = document.getElementById('ai-inp');
+  const q = inp.value.trim();
+  if (!q) return;
+  inp.value = '';
+  document.getElementById('ai-resp').textContent = '🤖 Thinking...';
+  try {
+    const r = await fetch('/jarvis/ask/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+      body: JSON.stringify({ message: q, history: [], match_context: `${T1_NAME} vs ${T2_NAME}` })
+    });
+    const d = await r.json();
+    document.getElementById('ai-resp').textContent = d.response;
+  } catch (e) {
+    document.getElementById('ai-resp').textContent = '🏏 Great question! Check live match for updates.';
+  }
+}
+document.getElementById('ai-inp').addEventListener('keydown', e => { if (e.key === 'Enter') askJarvis(); });
+// ── FanZone Insights ──
+async function postInsight() {
+  const inp = document.getElementById('fz-inp');
+  const tac = document.getElementById('fz-tactical');
+  const content = inp.value.trim();
+  if (!content) return;
+
+  const username = window.FZ?.name || 'Fan_' + Math.floor(Math.random()*1000);
+  const teamId = Math.random() > 0.5 ? {{ match.team1.id }} : {{ match.team2.id }}; // Auto-detect team based on sentiment?
+
+  try {
+    const r = await fetch(`/match/${MATCH_ID}/insight/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+      body: JSON.stringify({ content, username, team_id: teamId, is_tactical: tac.checked })
+    });
+    const d = await r.json();
+    
+    // Add to feed
+    const feed = document.getElementById('fz-feed');
+    if (feed.querySelector('div[style*="text-align:center"]')) feed.innerHTML = '';
+    
+    const card = document.createElement('div');
+    card.className = 'insight-card';
+    card.style.borderLeftColor = teamId === {{ match.team1.id }} ? T1_COLOR : T2_COLOR;
+    card.innerHTML = `
+      <div class="insight-meta">
+        <span class="insight-user">@${d.username}</span>
+        <span>${d.created_at}</span>
+      </div>
+      <div class="insight-content">
+        ${d.content}
+        ${tac.checked ? '<span class="insight-tag tag-tactical">Tactical</span>' : ''}
+      </div>
+    `;
+    feed.prepend(card);
+    inp.value = '';
+    tac.checked = false;
+    updateIntensity();
+    showToast('Insight shared! 🗣️');
+  } catch (e) {
+    showToast('Error sharing insight');
+  }
+}
+
+function updateIntensity() {
+  const bars = document.getElementById('intensity-bars').children;
+  for (let bar of bars) {
+    const h = 10 + Math.random() * 90;
+    const type = Math.random() > 0.5 ? 'active-t1' : 'active-t2';
+    bar.style.height = h + '%';
+    bar.className = 'intensity-bar ' + type;
+  }
+}
+setInterval(updateIntensity, 3000);
+
+// ── Live Fan Hub (Communication House) ──
+function sendHubMsg() {
+  const inp = document.getElementById('hub-inp');
+  const msg = inp.value.trim();
+  if (!msg) return;
+  
+  const chat = document.getElementById('hub-chat');
+  const div = document.createElement('div');
+  const name = window.FZ?.name || 'Fan';
+  div.className = 'chat-msg mine';
+  div.innerHTML = `<span class="chat-user">@${name}</span>${msg}`;
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+  inp.value = '';
+  
+  // Simulate reply
+  setTimeout(() => {
+    const replies = ["Absolutely! 🔥", "What a shot!", "Bowling needs to tighten up.", "IPL at its best! 🏏"];
+    const rDiv = document.createElement('div');
+    rDiv.className = 'chat-msg other';
+    rDiv.innerHTML = `<span class="chat-user">@Fan_${Math.floor(Math.random()*100)}</span>${replies[Math.floor(Math.random()*replies.length)]}`;
+    chat.appendChild(rDiv);
+    chat.scrollTop = chat.scrollHeight;
+  }, 2000);
+}
+
+// Initialize
+document.documentElement.style.setProperty('--t1-color', T1_COLOR);
+document.documentElement.style.setProperty('--t2-color', T2_COLOR);
+</script>
+{% endblock %}

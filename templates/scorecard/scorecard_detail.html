@@ -1,0 +1,81 @@
+{% extends "base/base.html" %}
+{% block title %}Scorecard — {{ scorecard.match_title }}{% endblock %}
+{% block extra_head %}
+<style>
+.sc-layout{display:grid;grid-template-columns:220px 1fr;min-height:calc(100vh - 130px);}
+.sc-sidebar{background:linear-gradient(180deg,#0f2456,#1a3a7c);padding:1.25rem 0.5rem;}
+.snav-link{display:flex;align-items:center;gap:0.75rem;padding:0.65rem 1rem;color:rgba(255,255,255,0.6);text-decoration:none;font-size:0.85rem;font-weight:500;border-radius:8px;transition:all 0.2s;margin-bottom:0.1rem;}
+.snav-link:hover,.snav-link.active{color:#fff;background:rgba(255,255,255,0.08);}
+.snav-icon{font-size:1rem;width:22px;text-align:center;}
+.sc-content{padding:1.25rem;background:#eef2f7;}
+.sc-card{background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,0.08);overflow:hidden;margin-bottom:1.25rem;}
+.sc-card-header{background:#0f2456;padding:0.75rem 1rem;font-size:0.85rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:rgba(255,255,255,0.85);display:flex;justify-content:space-between;align-items:center;}
+.sc-table{width:100%;border-collapse:collapse;font-size:0.82rem;}
+.sc-table thead tr{background:#f8fafc;}
+.sc-table thead th{padding:0.55rem 0.75rem;font-size:0.72rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#9ca3af;text-align:right;border-bottom:1px solid #f0f4f8;}
+.sc-table thead th:first-child,.sc-table thead th:nth-child(2){text-align:left;}
+.sc-table tbody tr{border-bottom:1px solid #f8fafc;transition:background 0.15s;}
+.sc-table tbody tr:hover{background:#fafbff;}
+.sc-table td{padding:0.65rem 0.75rem;text-align:right;vertical-align:middle;}
+.sc-table td:first-child{text-align:left;font-weight:700;color:#0f2456;}
+.sc-table td:nth-child(2){text-align:left;color:#9ca3af;font-size:0.75rem;}
+.runs-cell{font-weight:800;font-size:1.05rem;color:#0f2456;}
+</style>
+{% endblock %}
+{% block content %}
+<div class="sc-layout">
+  <div class="sc-sidebar">
+    <a href="/scorecard/" class="snav-link active" style="margin-bottom:0.75rem;">← Back to Scorecards</a>
+    <a href="/" class="snav-link"><span class="snav-icon">🏠</span>Home</a>
+    <a href="/matches/" class="snav-link"><span class="snav-icon">🏏</span>Matches</a>
+    <a href="/history/" class="snav-link"><span class="snav-icon">📈</span>Analysis</a>
+    <a href="/jarvis/" class="snav-link"><span class="snav-icon">🤖</span>Jarvis AI</a>
+  </div>
+  <div class="sc-content">
+    <div style="background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,0.08);padding:1.25rem;margin-bottom:1.25rem;">
+      <div style="font-family:'Teko',sans-serif;font-size:1.8rem;letter-spacing:1px;color:#0f2456;">{{ scorecard.match_title }}</div>
+      <div style="color:#9ca3af;font-size:0.88rem;margin-top:0.25rem;">{{ scorecard.status }}</div>
+      <div style="margin-top:0.75rem;">
+        <iframe src="https://bwidget.crictimes.org/" style="width:100%;min-height:200px;display:block;border:none;border-radius:8px;" scrolling="yes"></iframe>
+      </div>
+    </div>
+    {% for inns in scorecard.innings %}
+    <div class="sc-card">
+      <div class="sc-card-header">
+        <span>🏏 {{ inns.title }}</span>
+        <span style="color:#d4af37;">{{ inns.total }}</span>
+      </div>
+      <table class="sc-table">
+        <thead>
+          <tr>
+            <th>Batter</th><th>Dismissal</th>
+            <th>R</th><th>B</th><th>4s</th><th>6s</th><th>SR</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for b in inns.batsmen %}
+          <tr>
+            <td>{{ b.name }}</td>
+            <td>{{ b.dismissal }}</td>
+            <td class="runs-cell">{{ b.runs }}</td>
+            <td>{{ b.balls }}</td>
+            <td style="color:#22c55e;font-weight:700;">{{ b.fours }}</td>
+            <td style="color:#d4af37;font-weight:700;">{{ b.sixes }}</td>
+            <td>{{ b.sr }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="7" style="text-align:center;padding:1.5rem;color:#9ca3af;">No batting data available</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% empty %}
+    <div style="text-align:center;padding:3rem;background:#fff;border-radius:12px;color:#9ca3af;">
+      <div style="font-size:2.5rem;margin-bottom:0.75rem;">📊</div>
+      <div style="font-weight:600;">Scorecard data not available</div>
+      <div style="font-size:0.85rem;margin-top:0.4rem;">Cricbuzz may have blocked the request. Try using the live widget above.</div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
