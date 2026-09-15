@@ -1,0 +1,107 @@
+{% extends "base/base.html" %}
+{% load static %}
+{% block title %}Privacy Policy & Data Rights — IPL FanZone{% endblock %}
+{% block meta_description %}How IPL FanZone handles your data: GDPR & CCPA rights, cookie choices, what we store (very little), and how to export or delete everything. No signup, no ads, no data sales.{% endblock %}
+{% block extra_head %}
+<style>
+.privacy-layout{display:grid;grid-template-columns:220px 1fr;min-height:calc(100vh - 130px);}
+.privacy-sidebar{background:linear-gradient(180deg,#0f2456,#1a3a7c);padding:1.25rem 0.5rem;}
+.snav-link{display:flex;align-items:center;gap:0.75rem;padding:0.65rem 1rem;color:rgba(255,255,255,0.6);text-decoration:none;font-size:0.85rem;font-weight:500;border-radius:8px;transition:all 0.2s;margin-bottom:0.1rem;}
+.snav-link:hover,.snav-link.active{color:#fff;background:rgba(255,255,255,0.08);}
+.snav-icon{font-size:1rem;width:22px;text-align:center;}
+.privacy-content{padding:2rem;background:#eef2f7;}
+.pv-card{background:#fff;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,0.06);padding:1.75rem 2rem;margin-bottom:1.25rem;max-width:920px;}
+.pv-card h1{font-family:'Teko',sans-serif;font-size:2.2rem;letter-spacing:1.5px;color:#1a3a7c;margin-bottom:0.4rem;}
+.pv-card h2{font-family:'Barlow Condensed',sans-serif;font-size:1.25rem;color:#1a3a7c;margin:1.4rem 0 0.5rem;text-transform:uppercase;letter-spacing:0.5px;}
+.pv-card p,.pv-card li{font-size:0.92rem;color:#374151;line-height:1.7;}
+.pv-card ul{padding-left:1.25rem;margin:0.4rem 0;}
+.pv-badge{display:inline-block;background:rgba(212,175,55,0.12);border:1px solid #d4af37;color:#92700a;font-size:0.72rem;font-weight:800;letter-spacing:1px;text-transform:uppercase;border-radius:14px;padding:0.2rem 0.7rem;margin-right:0.4rem;margin-bottom:0.6rem;}
+.pv-btn{display:inline-block;background:#1a3a7c;color:#fff !important;text-decoration:none;font-weight:700;font-size:0.85rem;padding:0.6rem 1.2rem;border-radius:8px;margin:0.25rem 0.4rem 0.25rem 0;transition:all 0.2s;border:none;cursor:pointer;}
+.pv-btn:hover{background:#d4af37;color:#0f2456 !important;}
+.pv-btn.danger{background:#e63946;color:#fff;}
+.pv-btn.danger:hover{background:#b91c2c;}
+.pv-table{width:100%;border-collapse:collapse;font-size:0.85rem;margin:0.6rem 0;}
+.pv-table th{background:#1a3a7c;color:#fff;text-align:left;padding:0.5rem 0.7rem;font-size:0.75rem;letter-spacing:0.5px;text-transform:uppercase;}
+.pv-table td{padding:0.5rem 0.7rem;border-bottom:1px solid #e2e8f0;vertical-align:top;}
+@media (max-width:820px){.privacy-layout{grid-template-columns:1fr;}.privacy-sidebar{display:flex;overflow-x:auto;padding:0.45rem;}}
+</style>
+{% endblock %}
+{% block content %}
+<div class="privacy-layout">
+  <div class="privacy-sidebar">
+    <a href="/" class="snav-link"><span class="snav-icon">🏠</span>Home</a>
+    <a href="/matches/" class="snav-link"><span class="snav-icon">🏏</span>Matches</a>
+    <a href="/scorecard/" class="snav-link"><span class="snav-icon">📊</span>Scorecard</a>
+    <a href="/history/" class="snav-link"><span class="snav-icon">📈</span>Analysis</a>
+    <a href="/jarvis/" class="snav-link"><img src="{% static 'images/jarvis-avatar.svg' %}" alt="Jarvis" class="snav-jarvis">Jarvis AI</a>
+    <a href="/chat/" class="snav-link"><span class="snav-icon">💬</span>Fan Chat</a>
+    <a href="/privacy/" class="snav-link active"><span class="snav-icon">🔒</span>Privacy</a>
+  </div>
+  <div class="privacy-content">
+    <div class="pv-card">
+      <span class="pv-badge">No signup</span><span class="pv-badge">No ads</span><span class="pv-badge">No data sales</span><span class="pv-badge">GDPR + CCPA ready</span>
+      <h1>🔒 PRIVACY & YOUR DATA</h1>
+      <p>IPL FanZone is a free fan hub. We collect the <strong>minimum possible</strong> data to make the site fun — and you can see or erase all of it, any time, in one click.</p>
+      <p>
+        <a class="pv-btn" href="{% url 'privacy:my_data' %}">👤 View / export / delete my data</a>
+        <a class="pv-btn" href="{% url 'privacy:export' %}" id="pv-export-quick">⬇ Download my data (JSON)</a>
+        <button class="pv-btn danger" onclick="if(window.FZ)FZ.consentReset();showToast('Cookie choices reset — the banner will re-appear.');">Reset cookie choices</button>
+      </p>
+
+      <h2>1. What we store</h2>
+      <table class="pv-table">
+        <tr><th>Data</th><th>Where it lives</th><th>Why</th><th>Retention</th></tr>
+        <tr><td>Fan name & favourite team</td><td><strong>Your browser</strong> (localStorage)</td><td>Personalise pages & chat</td><td>Until you clear it</td></tr>
+        <tr><td>Jarvis chat memory (name, city, favourite team)</td><td>Server memory file</td><td>So Jarvis remembers you between chats</td><td>Until you delete it</td></tr>
+        <tr><td>Jarvis conversations</td><td>SQLite database</td><td>Chat history shown back to you</td><td>Until you delete it</td></tr>
+        <tr><td>Chat messages, reactions, fan insights</td><td>SQLite database</td><td>Public fan features you posted</td><td>Until you delete them</td></tr>
+        <tr><td>Cookie-consent choice</td><td>First-party cookie <code>fz_consent</code></td><td>Remembering your choice</td><td>180 days</td></tr>
+        <tr><td>Session + CSRF cookies</td><td>Strictly-necessary cookies</td><td>Security & rate limiting</td><td>Session only</td></tr>
+        <tr><td>IP address (hashed)</td><td>In-memory rate-limit counters</td><td>Stopping abuse of our free AI quota</td><td>≤ 24 hours</td></tr>
+      </table>
+      <p><strong>We never store:</strong> passwords (no accounts), payment info, location tracking, advertising identifiers.</p>
+
+      <h2>2. Your rights (GDPR)</h2>
+      <ul>
+        <li><strong>Access & portability (Art. 15/20):</strong> <a href="{% url 'privacy:my_data' %}">download everything we hold</a> as JSON.</li>
+        <li><strong>Erasure (Art. 17):</strong> one click on the <a href="{% url 'privacy:my_data' %}">My Data page</a> wipes server records + cookies.</li>
+        <li><strong>Restriction (Art. 18):</strong> choose “Decline” in the cookie banner — we stop persisting personalisation data.</li>
+        <li><strong>Lodging a complaint:</strong> you may complain to your local supervisory authority (e.g. ICO in the UK, your EU DPA).</li>
+      </ul>
+      <p>Lawful bases: <em>consent</em> (Art. 6(1)(a)) for optional personalisation & Jarvis memory; <em>legitimate interest</em> (Art. 6(1)(f)) for security/rate-limit counters.</p>
+
+      <h2>3. Your rights (CCPA / CPRA — California)</h2>
+      <ul>
+        <li><strong>Right to know / delete / correct:</strong> use the <a href="{% url 'privacy:my_data' %}">My Data page</a> — it does all three.</li>
+        <li><strong>Right to opt-out of sale/sharing:</strong> <strong>we do not sell or share personal information.</strong> There is nothing to opt out of — but declining cookies also disables the third-party embeds below.</li>
+        <li><strong>Non-discrimination:</strong> the site works fully even if you decline cookies (Jarvis just won't remember you between visits).</li>
+      </ul>
+
+      <h2>4. Third-party services</h2>
+      <table class="pv-table">
+        <tr><th>Service</th><th>Purpose</th><th>Notes</th></tr>
+        <tr><td>Groq (AI)</td><td>Jarvis answers</td><td>Your question text is sent to Groq's API; anonymous by design.</td></tr>
+        <tr><td>ESPN Cricinfo (RSS)</td><td>Live match list</td><td>Fetched server-side and cached — your browser never talks to it.</td></tr>
+        <tr><td>CricZop</td><td>Full scorecards</td><td>Fetched server-side and cached — your browser never talks to CricZop.</td></tr>
+        <tr><td>Crictimes / CricketData widgets</td><td>Embedded live widgets</td><td>Third-party iframes/scripts; blocked if you decline cookies.</td></tr>
+        <tr><td>Google Fonts</td><td>Typography</td><td>Stylesheet + font files only.</td></tr>
+      </table>
+
+      <h2>5. Cookies we set</h2>
+      <ul>
+        <li><code>sessionid</code> — strictly necessary (rate limiting, CSRF session).</li>
+        <li><code>csrftoken</code> — strictly necessary (form security).</li>
+        <li><code>fz_consent</code> — your accept/decline choice (180 days).</li>
+      </ul>
+      <p>Fan name/team use <strong>localStorage</strong>, not cookies, and only after you consent.</p>
+
+      <h2>6. Data security & transfers</h2>
+      <p>User identifiers are SHA-256 hashed before use in rate-limit counters. AI prompts go to Groq (US) — no names are required, so prompts are effectively anonymous. Backups: none beyond the host's standard disk.</p>
+
+      <h2>7. Contact</h2>
+      <p>Privacy requests: <a href="mailto:hello@iplfanzone.app" style="color:#1a3a7c;font-weight:700;">hello@iplfanzone.app</a> — or do it yourself instantly on the <a href="{% url 'privacy:my_data' %}">My Data page</a>.</p>
+      <p class="text-dim" style="margin-top:1rem;font-size:0.78rem;">Last updated: September 2026 · This policy applies to this fan-made, non-commercial site.</p>
+    </div>
+  </div>
+</div>
+{% endblock %}

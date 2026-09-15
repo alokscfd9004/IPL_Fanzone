@@ -1,0 +1,52 @@
+# ── Secrets (NEVER commit) ──
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# ── Personal / runtime data (GDPR: never commit user data) ──
+jarvis_memory.json
+db.sqlite3
+logs/
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual environment
+env/
+venv/
+ENV/
+.venv/
+
+# Django
+media/
+staticfiles/
+
+# Test / coverage artifacts
+.coverage
+coverage.xml
+htmlcov/
+.pytest_cache/
+
+# Generated data (regenerate: python manage.py build_finetune_dataset)
+data/finetune_ipl.jsonl
+
+# Tooling
+.vercel/
+.ipynb_checkpoints/
+
+# IDEs
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Cache
+*.cache

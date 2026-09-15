@@ -1,0 +1,113 @@
+{% extends "base/base.html" %}
+{% load static %}
+{% block title %}My Data — Export or Delete — IPL FanZone{% endblock %}
+{% block meta_description %}See, download or delete all personal data IPL FanZone holds about you — GDPR right of access, portability and erasure, CCPA right to know and delete.{% endblock %}
+{% block extra_head %}
+<style>
+.mydata-layout{display:grid;grid-template-columns:220px 1fr;min-height:calc(100vh - 130px);}
+.mydata-sidebar{background:linear-gradient(180deg,#0f2456,#1a3a7c);padding:1.25rem 0.5rem;}
+.snav-link{display:flex;align-items:center;gap:0.75rem;padding:0.65rem 1rem;color:rgba(255,255,255,0.6);text-decoration:none;font-size:0.85rem;font-weight:500;border-radius:8px;margin-bottom:0.1rem;}
+.snav-link:hover,.snav-link.active{color:#fff;background:rgba(255,255,255,0.08);}
+.snav-icon{font-size:1rem;width:22px;text-align:center;}
+.mydata-content{padding:2rem;background:#eef2f7;}
+.md-card{background:#fff;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,0.06);padding:1.75rem 2rem;margin-bottom:1.25rem;max-width:820px;}
+.md-card h1{font-family:'Teko',sans-serif;font-size:2rem;letter-spacing:1.5px;color:#1a3a7c;margin-bottom:0.4rem;}
+.md-card h2{font-family:'Barlow Condensed',sans-serif;font-size:1.15rem;color:#1a3a7c;margin:1.2rem 0 0.4rem;text-transform:uppercase;}
+.md-card p{font-size:0.9rem;color:#374151;line-height:1.65;}
+.md-btn{display:inline-block;background:#1a3a7c;color:#fff;text-decoration:none;font-weight:700;font-size:0.85rem;padding:0.6rem 1.2rem;border-radius:8px;margin:0.35rem 0.4rem 0.35rem 0;border:none;cursor:pointer;transition:all 0.2s;}
+.md-btn:hover{background:#d4af37;color:#0f2456;}
+.md-btn.danger{background:#e63946;color:#fff;}
+.md-btn.danger:hover{background:#b91c2c;}
+#md-preview{background:#0f2456;color:#a5f3c8;border-radius:10px;padding:1rem;font-family:monospace;font-size:0.75rem;max-height:320px;overflow:auto;white-space:pre-wrap;word-break:break-word;}
+@media (max-width:820px){.mydata-layout{grid-template-columns:1fr;}.mydata-sidebar{display:flex;overflow-x:auto;padding:0.45rem;}}
+</style>
+{% endblock %}
+{% block content %}
+<div class="mydata-layout">
+  <div class="mydata-sidebar">
+    <a href="/" class="snav-link"><span class="snav-icon">🏠</span>Home</a>
+    <a href="/privacy/" class="snav-link active"><span class="snav-icon">🔒</span>Privacy</a>
+    <a href="/jarvis/" class="snav-link"><img src="{% static 'images/jarvis-avatar.svg' %}" alt="Jarvis" class="snav-jarvis">Jarvis AI</a>
+  </div>
+  <div class="mydata-content">
+    <div class="md-card">
+      <h1>👤 MY DATA</h1>
+      <p>This site has no accounts. We identify you only by the <strong>fan name you typed</strong> (kept in your own browser) and an anonymous session cookie. Here you can exercise your GDPR / CCPA rights instantly.</p>
+      <p>Fan name detected in this browser: <strong id="md-username">—</strong></p>
+
+      <h2>Right to access & portability</h2>
+      <p>
+        <button class="md-btn" onclick="previewData()">🔍 Preview my data</button>
+        <button class="md-btn" onclick="downloadData()">⬇ Download as JSON</button>
+      </p>
+      <div id="md-preview" style="display:none;"></div>
+
+      <h2>Right to erasure ("right to be forgotten")</h2>
+      <p>
+        Deletes: Jarvis memory & conversations, chat messages, reactions, fan insights, fan profile matching your fan name, your session — plus this browser's localStorage fan data.
+      </p>
+      <p><button class="md-btn danger" onclick="deleteAll()">🗑 Delete everything about me</button></p>
+
+      <h2>Cookie consent</h2>
+      <p id="md-consent-state">Current choice: <strong>—</strong></p>
+      <p>
+        <button class="md-btn" onclick="setConsent('granted')">✅ Accept</button>
+        <button class="md-btn" onclick="setConsent('denied')">🚫 Decline</button>
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+const mdUser = localStorage.getItem('fz_username') || '';
+document.getElementById('md-username').textContent = mdUser || '(none set)';
+refreshConsentState();
+
+async function downloadData() {
+  window.location = '{% url "privacy:export" %}?username=' + encodeURIComponent(mdUser);
+}
+
+async function previewData() {
+  const box = document.getElementById('md-preview');
+  box.style.display = 'block';
+  box.textContent = 'Loading…';
+  try {
+    const r = await fetch('{% url "privacy:export" %}?username=' + encodeURIComponent(mdUser));
+    const d = await r.json();
+    box.textContent = JSON.stringify(d, null, 2);
+  } catch (e) { box.textContent = 'Could not load data: ' + e; }
+}
+
+async function deleteAll() {
+  if (!confirm('Delete ALL your data from IPL FanZone? This cannot be undone.')) return;
+  const r = await fetch('{% url "privacy:delete" %}', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+    body: JSON.stringify({ username: mdUser })
+  });
+  const d = await r.json();
+  localStorage.removeItem('fz_username');
+  localStorage.removeItem('fz_team');
+  localStorage.removeItem('fz_consent');
+  showToast('All your data was deleted. 🗑');
+  setTimeout(() => window.location.href = '/', 1200);
+}
+
+async function setConsent(choice) {
+  await fetch('{% url "privacy:consent" %}', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+    body: JSON.stringify({ choice })
+  });
+  localStorage.setItem('fz_consent', choice);
+  refreshConsentState();
+  showToast(choice === 'granted' ? 'Thanks! Personalisation enabled. ✅' : 'Understood. Personalisation & memory disabled. 🚫');
+}
+
+function refreshConsentState() {
+  const v = localStorage.getItem('fz_consent') || getCookie('fz_consent') || '(not set)';
+  document.querySelector('#md-consent-state strong').textContent = v;
+}
+</script>
+{% endblock %}

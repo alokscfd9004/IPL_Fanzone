@@ -1,0 +1,5 @@
+# OPTIONAL: only needed for the one-off data pipeline command
+#   python manage.py process_ipl_data
+# Not required at runtime — data/ipl_processed.json is already generated.
+pandas>=2.0
+kagglehub>=0.3

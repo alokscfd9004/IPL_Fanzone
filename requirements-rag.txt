@@ -1,0 +1,9 @@
+# Optional LangChain orchestration for Jarvis RAG.
+# The base retrieval layer is pure Python and needs NOTHING from this file —
+# install this only if you want the chat completion orchestrated through
+# LangChain's ChatGroq chain (set USE_LANGCHAIN_RAG=true after installing).
+#
+#   pip install -r requirements-rag.txt
+#
+langchain-core>=0.3.0
+langchain-groq>=0.2.0

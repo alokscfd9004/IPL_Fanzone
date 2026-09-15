@@ -1,0 +1,48 @@
+# Secrets must enter the container ONLY via --env-file, platform env vars,
+# or a secrets manager — never via COPY . .
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# VCS & tool config
+.git
+.gitignore
+.github/
+.vercel
+.vercelignore
+.dockerignore
+dockerfile
+
+# Local runtime state (fresh DB is created by CMD: manage.py migrate)
+db.sqlite3
+jarvis_memory.json
+logs/
+*.log
+
+# Python junk
+__pycache__/
+*.py[cod]
+*.pyo
+venv/
+env/
+.venv/
+.pytest_cache/
+
+# Collected statics + uploads (rebuilt by collectstatic in the image build)
+staticfiles/
+media/
+
+# Regenerable artifacts
+data/finetune_ipl.jsonl
+.coverage
+htmlcov/
+
+# Docs not needed at runtime
+*.md
+!README.md
+
+# OS
+.DS_Store
+Thumbs.db

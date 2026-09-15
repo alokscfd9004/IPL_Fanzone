@@ -1,0 +1,377 @@
+{% extends "base/base.html" %}
+{% load static %}
+{% block title %}Live Cricket Scores &amp; Scorecards — IPL FanZone{% endblock %}
+{% block meta_description %}Live cricket scores from ESPN Cricinfo's free RSS feed with full scorecards — auto-updating on IPL FanZone, no API key needed.{% endblock %}
+
+{% block extra_head %}
+<style>
+.sc-layout{display:grid;grid-template-columns:220px 1fr;min-height:calc(100vh - 130px);}
+.sc-sidebar{background:linear-gradient(180deg,#0f2456,#1a3a7c);padding:1.25rem 0.5rem;}
+.snav-link{display:flex;align-items:center;gap:0.75rem;padding:0.65rem 1rem;color:rgba(255,255,255,0.6);text-decoration:none;font-size:0.85rem;font-weight:500;border-radius:8px;transition:all 0.2s;margin-bottom:0.1rem;}
+.snav-link:hover,.snav-link.active{color:#fff;background:rgba(255,255,255,0.08);}
+.snav-icon{font-size:1rem;width:22px;text-align:center;}
+
+.sc-content{padding:1.25rem;background:#eef2f7;}
+
+/* CRICTIMES EMBED */
+.crictimes-box{
+  background:#fff;border-radius:12px;
+  box-shadow:0 2px 12px rgba(0,0,0,0.08);
+  overflow:hidden;margin-bottom:1.25rem;
+}
+
+.ctb-header{
+  background:linear-gradient(135deg,#e63946,#c91a27);
+  padding:0.65rem 1rem;
+  display:flex;align-items:center;gap:0.5rem;
+  font-size:0.82rem;font-weight:700;letter-spacing:1px;
+  text-transform:uppercase;color:#fff;
+}
+
+/* MATCHES LIST */
+.match-list{margin-bottom:1.25rem;}
+
+.match-list-card{
+  background:#fff;border-radius:10px;
+  border:1px solid #e2e8f0;padding:1rem 1.25rem;
+  margin-bottom:0.65rem;
+  display:flex;align-items:center;gap:1rem;
+  cursor:pointer;text-decoration:none;color:inherit;
+  transition:all 0.2s;box-shadow:0 1px 4px rgba(0,0,0,0.04);
+}
+
+.match-list-card:hover{border-color:#1a3a7c;box-shadow:0 4px 16px rgba(0,0,0,0.08);transform:translateX(4px);}
+.match-list-card.live{border-left:3px solid #e63946;}
+
+.mlc-status{font-size:0.72rem;font-weight:700;letter-spacing:0.5px;padding:3px 8px;border-radius:10px;white-space:nowrap;}
+.mlc-ipl{background:linear-gradient(135deg,#d4af37,#e8a000);color:#0f2456;font-size:0.65rem;font-weight:800;letter-spacing:0.5px;padding:2px 6px;border-radius:8px;margin-left:5px;}
+.mlc-live{background:#fef2f2;color:#e63946;border:1px solid rgba(230,57,70,0.2);}
+.mlc-done{background:#f0f4f8;color:#9ca3af;}
+.mlc-up{background:#f0f8ff;color:#1a3a7c;border:1px solid rgba(26,58,124,0.2);}
+
+.mlc-title{font-weight:600;font-size:0.92rem;color:#374151;flex:1;}
+.mlc-scores{font-size:0.82rem;color:#9ca3af;font-family:'Barlow Condensed',sans-serif;}
+.mlc-status-text{font-size:0.78rem;color:#6b7280;margin-top:0.15rem;}
+
+/* SCORECARD TABLE */
+.sc-card{background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,0.08);overflow-x:auto;margin-bottom:1.25rem;}
+.sc-card-header{background:#0f2456;padding:0.75rem 1rem;font-size:0.85rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:rgba(255,255,255,0.85);}
+.sc-table{width:100%;border-collapse:collapse;font-size:0.82rem;}
+.sc-table thead tr{background:#f8fafc;}
+.sc-table thead th{padding:0.55rem 0.75rem;font-size:0.72rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#9ca3af;text-align:right;border-bottom:1px solid #f0f4f8;}
+.sc-table thead th:first-child,.sc-table thead th:nth-child(2){text-align:left;}
+.sc-table tbody tr{border-bottom:1px solid #f8fafc;transition:background 0.15s;}
+.sc-table tbody tr:hover{background:#fafbff;}
+.sc-table td{padding:0.6rem 0.75rem;text-align:right;vertical-align:middle;}
+.sc-table td:first-child,.sc-table td:nth-child(2){text-align:left;}
+.sc-table td:first-child{font-weight:700;color:#0f2456;}
+.sc-table td:nth-child(2){color:#9ca3af;font-size:0.78rem;}
+.runs-cell{font-weight:800;color:#0f2456;font-size:1rem;}
+.total-row{background:#f0f4f8;font-weight:700;}
+
+.refresh-btn{background:#1a3a7c;color:#fff;border:none;border-radius:8px;padding:0.45rem 1rem;font-size:0.78rem;font-weight:700;cursor:pointer;letter-spacing:0.5px;transition:all 0.2s;display:flex;align-items:center;gap:0.4rem;}
+.refresh-btn:hover{background:#d4af37;color:#0f2456;}
+
+.loading-overlay{display:flex;align-items:center;justify-content:center;padding:3rem;color:#9ca3af;gap:0.75rem;font-size:0.9rem;}
+.spinner{width:20px;height:20px;border:2px solid #e2e8f0;border-top-color:#1a3a7c;border-radius:50%;animation:spin 0.8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ANIMATION VIEW */
+.anim-box{background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,0.08);overflow:hidden;margin-bottom:1.25rem;}
+.anim-header{background:#0f2456;padding:0.65rem 1rem;display:flex;justify-content:space-between;align-items:center;font-size:0.78rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:rgba(255,255,255,0.8);}
+#sc-canvas{width:100%;height:280px;display:block;background:#0a1a0a;}
+
+/* IPL STATUS BANNER */
+.ipl-banner{
+  border-radius:12px;margin-bottom:1rem;padding:0.9rem 1.25rem;
+  display:flex;align-items:center;gap:1rem;
+  background:linear-gradient(135deg,#0f2456,#1a3a7c);color:#fff;
+  box-shadow:0 2px 12px rgba(15,36,86,0.25);
+}
+.ipl-banner.off{background:linear-gradient(135deg,#3a3f4a,#565b66);}
+.ipl-banner .ib-emoji{font-size:1.6rem;}
+.ipl-banner .ib-title{font-weight:800;font-size:0.95rem;letter-spacing:0.3px;}
+.ipl-banner .ib-sub{font-size:0.78rem;color:rgba(255,255,255,0.65);margin-top:0.15rem;}
+.section-label{font-family:'Teko',sans-serif;font-size:1.25rem;font-weight:600;letter-spacing:1px;color:#0f2456;margin:1rem 0 0.6rem;}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="sc-layout">
+
+  <div class="sc-sidebar">
+    <a href="/" class="snav-link"><span class="snav-icon">🏠</span>Home</a>
+    <a href="/matches/" class="snav-link"><span class="snav-icon">🏏</span>Matches</a>
+    <a href="/scorecard/" class="snav-link active"><span class="snav-icon">📊</span>Scorecard</a>
+    <a href="/history/" class="snav-link"><span class="snav-icon">📈</span>Analysis</a>
+    <a href="/jarvis/" class="snav-link"><img src="{% static 'images/jarvis-avatar.svg' %}" alt="Jarvis" class="snav-jarvis">Jarvis AI</a>
+    <hr style="border:none;border-top:1px solid rgba(255,255,255,0.06);margin:1rem 0.5rem;">
+    <div style="padding:0 0.75rem;font-size:0.65rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.25);margin-bottom:0.5rem;">Data Source</div>
+    <a href="https://www.espncricinfo.com" target="_blank" rel="noopener" class="snav-link"><span class="snav-icon">📡</span>ESPN Cricinfo</a>
+    <a href="https://www.criczop.com" target="_blank" rel="noopener" class="snav-link"><span class="snav-icon">⚡</span>CricZop Scores</a>
+    <a href="https://crictimes.org" target="_blank" rel="noopener" class="snav-link"><span class="snav-icon">🔴</span>Crictimes Widget</a>
+  </div>
+
+  <div class="sc-content">
+
+    <!-- LIVE WIDGET -->
+    <div class="crictimes-box">
+      <div class="ctb-header">
+        <span>🔴</span> CRICTIMES LIVE SCORE WIDGET
+      </div>
+      <iframe data-consent-src="https://bwidget.crictimes.org/" src="about:blank" style="width:100%;min-height:250px;display:block;" frameborder="0" scrolling="yes"></iframe>
+    </div>
+
+    <!-- MATCH LIST from ESPN Cricinfo RSS -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;">
+      <div style="font-family:'Teko',sans-serif;font-size:1.5rem;font-weight:600;letter-spacing:1px;color:#0f2456;">🏏 CURRENT MATCHES (ESPN Cricinfo)</div>
+      <button class="refresh-btn" onclick="refreshMatches()">
+        <span id="refresh-icon">🔄</span> Refresh
+      </button>
+    </div>
+    <div id="live-feed-pill" style="font-size:0.68rem;color:#9ca3af;margin:-0.4rem 0 0.6rem;font-weight:700;letter-spacing:0.5px;">⚡ live feed: connecting…</div>
+
+    <!-- IPL STATUS BANNER -->
+    <div id="ipl-banner" class="ipl-banner {% if not has_live_ipl %}off{% endif %}">
+      <div class="ib-emoji" id="ib-emoji">{% if has_live_ipl %}🏆{% else %}📅{% endif %}</div>
+      <div style="flex:1;">
+        <div class="ib-title" id="ib-title">
+          {% if has_live_ipl %}🏏 IPL match is LIVE right now!
+          {% else %}No live IPL match right now{% endif %}
+        </div>
+        <div class="ib-sub" id="ib-sub">
+          {% if has_live_ipl %}Catch every ball below 👇
+          {% else %}{{ next_ipl.label }}{% if next_ipl.days_to_go %} — just {{ next_ipl.days_to_go }} days to go! 🏏{% endif %} Meanwhile, enjoy other live cricket 👇{% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div id="matches-list" class="match-list">
+      {% for match in matches %}
+      <a href="/scorecard/{{ match.id }}/" class="match-list-card {% if match.is_live %}live{% endif %}">
+        <div>
+          <span class="mlc-status {% if match.is_live %}mlc-live{% else %}mlc-done{% endif %}">
+            {{ match.is_live|yesno:"LIVE,DONE" }}
+          </span>{% if match.league == 'IPL' %}<span class="mlc-ipl">IPL</span>{% endif %}
+        </div>
+        <div style="flex:1;">
+          <div class="mlc-title">{{ match.title }}</div>
+          <div class="mlc-status-text">{{ match.status }}</div>
+          <div class="mlc-scores">{{ match.scores|join:" | " }}</div>
+        </div>
+        <div style="color:#9ca3af;font-size:1.2rem;">→</div>
+      </a>
+      {% empty %}
+      <div style="text-align:center;padding:3rem;color:#9ca3af;">
+        <div style="font-size:2.5rem;margin-bottom:0.75rem;">🏏</div>
+        <div style="font-weight:600;">Could not load live matches from ESPN Cricinfo</div>
+        <div style="font-size:0.85rem;margin-top:0.4rem;">Check internet connection or try refreshing</div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- ANIMATION PREVIEW -->
+    <div class="anim-box">
+      <div class="anim-header">
+        <span>🏟️ LIVE MATCH ANIMATION</span>
+        <span id="anim-evt" style="color:#d4af37;font-size:0.8rem;">● Demo Mode</span>
+      </div>
+      <canvas id="sc-canvas"></canvas>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Mini ground animation for scorecard page — same "real players" engine, compact form
+const cv = document.getElementById('sc-canvas');
+const ctx = cv.getContext('2d');
+function resize(){ cv.width = cv.offsetWidth; cv.height = cv.offsetHeight || 230; }
+resize(); window.addEventListener('resize', resize);
+
+const GS = { particles: [], frame: 0, ball: { x:0,y:0,vx:0,vy:0,z:0,active:false }, batA: null, batsmanRun: 0, appeal: 0, bowlerRun: 0 };
+
+// compact player figure (same look as match page)
+function drawPerson(ctx, x, y, kit, opts = {}) {
+  const { run = 0, arm = null, batA = null, raise = false, shirt = null } = opts;
+  const S = 1.1;
+  const legSwing = Math.sin(run * 12) * Math.min(1, run) * 3.5;
+  ctx.save(); ctx.translate(x, y); ctx.scale(S, S);
+  ctx.fillStyle = 'rgba(0,0,0,0.28)';
+  ctx.beginPath(); ctx.ellipse(0, 9, 6, 2, 0, 0, Math.PI*2); ctx.fill();
+  ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.2; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(0, 1); ctx.lineTo(-2.5 + legSwing, 9); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(0, 1); ctx.lineTo(2.5 - legSwing, 9); ctx.stroke();
+  ctx.fillStyle = shirt || '#f5f7fa';
+  ctx.beginPath();
+  ctx.moveTo(-2.5, -7.5); ctx.lineTo(2.5, -7.5); ctx.quadraticCurveTo(4, -7.5, 4, -6);
+  ctx.lineTo(4, 0); ctx.lineTo(-4, 0); ctx.lineTo(-4, -6); ctx.quadraticCurveTo(-4, -7.5, -2.5, -7.5);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = kit; ctx.fillRect(-4, -7.5, 8, 2.5);
+  ctx.fillStyle = '#f2c99a';
+  ctx.beginPath(); ctx.arc(0, -10.5, 3.1, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = kit;
+  ctx.beginPath(); ctx.arc(0, -11.6, 2.9, Math.PI, Math.PI*2); ctx.fill();
+  if (arm !== null) {
+    ctx.strokeStyle = '#f2c99a'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(0, -5.5); ctx.lineTo(Math.cos(arm)*7, -5.5 + Math.sin(arm)*7); ctx.stroke();
+  } else if (raise) {
+    ctx.strokeStyle = '#f2c99a'; ctx.lineWidth = 1.8;
+    ctx.beginPath(); ctx.moveTo(0, -5.5); ctx.lineTo(-5.5, -13); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, -5.5); ctx.lineTo(5.5, -13); ctx.stroke();
+  } else if (batA !== null) {
+    const hx = Math.cos(batA)*4.5, hy = -3.5 + Math.sin(batA)*4.5;
+    ctx.strokeStyle = '#f2c99a'; ctx.lineWidth = 1.8;
+    ctx.beginPath(); ctx.moveTo(0, -5.5); ctx.lineTo(hx, hy); ctx.stroke();
+    ctx.strokeStyle = '#d9b98a'; ctx.lineWidth = 2.2;
+    ctx.beginPath(); ctx.moveTo(hx, hy); ctx.lineTo(hx + Math.cos(batA)*9, hy + Math.sin(batA)*9); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawMiniGround() {
+  const W = cv.width, H = cv.height, cx = W/2, cy = H*0.54;
+  ctx.fillStyle = '#050918'; ctx.fillRect(0,0,W,H);
+  ctx.save(); ctx.translate(cx, cy);
+  const g = ctx.createRadialGradient(0,0,0,0,0,W*0.44);
+  g.addColorStop(0,'#1e6b1e'); g.addColorStop(0.6,'#175217'); g.addColorStop(1,'#0a1f0a');
+  ctx.fillStyle=g; ctx.beginPath(); ctx.ellipse(0,0,W*0.42,H*0.4,0,0,Math.PI*2); ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,0.15)'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.ellipse(0,0,W*0.42,H*0.4,0,0,Math.PI*2); ctx.stroke();
+  ctx.strokeStyle='rgba(255,255,255,0.08)'; ctx.setLineDash([4,4]);
+  ctx.beginPath(); ctx.ellipse(0,0,W*0.2,H*0.18,0,0,Math.PI*2); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle='#c8a87a'; ctx.fillRect(-W*0.02,-H*0.2,W*0.04,H*0.4);
+  ctx.restore();
+
+  GS.frame++;
+  GS.appeal *= 0.94;
+  GS.bowlerRun = GS.ball.active ? 0 : (GS.frame % 90) / 90;
+
+  // ── ACTORS: bowler run-up at top of pitch, batsman + keeper at bottom ──
+  const bwRunT = Math.min(1, GS.bowlerRun * 1.15);
+  const bowX = cx, bowY = cy - H*0.2 + bwRunT * H*0.13;
+  drawPerson(ctx, bowX, bowY, '#28457c', { run: GS.bowlerRun * 2.4, shirt: '#28457c' });
+  // striker (gold kit, IPL feel)
+  drawPerson(ctx, cx + W*0.02, cy + H*0.155, '#d4af37', { batA: GS.batA ?? (-1.1 + Math.sin(GS.frame*0.07)*0.1), shirt: '#d4af37' });
+  // keeper crouched behind
+  drawPerson(ctx, cx - 1, cy + H*0.21, '#ffd24d', { shirt: '#28457c' });
+  // two deep fielders swaying
+  const sw = Math.sin(GS.frame*0.05);
+  drawPerson(ctx, cx + W*0.28, cy - H*0.12 + sw*2, '#28457c', { shirt: '#28457c', raise: GS.appeal > 0.4 });
+  drawPerson(ctx, cx - W*0.26, cy - H*0.10 - sw*2, '#28457c', { shirt: '#28457c', raise: GS.appeal > 0.4 });
+
+  // stumps at striker end
+  ctx.fillStyle = '#ede0b0';
+  for (let i = -1; i <= 1; i++) ctx.fillRect(cx + i*4 - 1, cy + H*0.185 - 9, 2, 9);
+
+  if (GS.ball.active) {
+    GS.ball.x += GS.ball.vx; GS.ball.y += GS.ball.vy;
+    GS.ball.vx *= 0.985; GS.ball.vy *= 0.985; GS.ball.z = Math.max(0, GS.ball.z - 0.02);
+    const bx = cx + GS.ball.x*W*0.4, by = cy + GS.ball.y*H*0.36, sz = 6 + GS.ball.z*10;
+    const bg = ctx.createRadialGradient(bx-sz*.2,by-sz*.2,0,bx,by,sz);
+    bg.addColorStop(0,'#e85050'); bg.addColorStop(1,'#7a0000');
+    ctx.fillStyle=bg; ctx.shadowColor='rgba(220,20,20,0.5)'; ctx.shadowBlur=10+GS.ball.z*15;
+    ctx.beginPath(); ctx.arc(bx,by,sz,0,Math.PI*2); ctx.fill(); ctx.shadowBlur=0;
+    GS.particles.push({type:'trail',x:bx,y:by,alpha:0.4,sz:sz*0.4});
+    if (Math.abs(GS.ball.vx)<0.003 && Math.abs(GS.ball.vy)<0.003) { GS.ball.active=false; GS.batA=null; }
+  }
+  GS.particles = GS.particles.filter(p=>p.alpha>0.01);
+  GS.particles.forEach(p => {
+    if(p.type==='trail'){ctx.fillStyle=`rgba(200,40,40,${p.alpha})`;ctx.beginPath();ctx.arc(p.x,p.y,p.sz,0,Math.PI*2);ctx.fill();p.alpha*=0.85;p.sz*=0.9;}
+    else if(p.type==='spark'){ctx.fillStyle=`rgba(${p.r},${p.g},${p.b},${p.alpha})`;ctx.beginPath();ctx.arc(p.x,p.y,p.sz,0,Math.PI*2);ctx.fill();p.x+=p.vx;p.y+=p.vy;p.vy+=0.1;p.alpha-=0.025;p.sz*=0.95;}
+  });
+  requestAnimationFrame(drawMiniGround);
+}
+drawMiniGround();
+
+function triggerMiniEvent(evt) {
+  const W = cv.width, H = cv.height, cx=W/2, cy=H*0.54;
+  let angle, speed, z, r, g, b;
+  if(evt==='6'){angle=(Math.random()-.5)*Math.PI*.7;speed=0.08;z=2.5;r=212;g=175;b=55;}
+  else if(evt==='4'){angle=(Math.random()-.5)*Math.PI*.6;speed=0.065;z=1.2;r=34;g=197;b=94;}
+  else if(evt==='W'){angle=Math.PI*.4;speed=0.04;z=0.5;r=230;g=57;b=70; GS.appeal=1;}
+  else{angle=(Math.random()-.5)*Math.PI*.4;speed=0.03;z=0.8;r=26;g=58;b=124;}
+  GS.ball.x=0;GS.ball.y=0.12;GS.ball.vx=Math.sin(angle)*speed;GS.ball.vy=-Math.cos(angle)*speed;GS.ball.z=z;GS.ball.active=true;
+  GS.batA = 0.75;          // bat swings through as the ball leaves
+  GS.bowlerRun = 0;        // new delivery starts fresh
+  const n = evt==='6'?40:evt==='4'?25:15;
+  for(let i=0;i<n;i++){const sa=Math.random()*Math.PI*2,sv=2+Math.random()*4;GS.particles.push({type:'spark',x:cx,y:cy,vx:Math.cos(sa)*sv,vy:Math.sin(sa)*sv-2,r,g,b,alpha:1,sz:2+Math.random()*3});}
+  const evtEl = document.getElementById('anim-evt');
+  const labels = {'6':'⚡ SIX!','4':'💚 FOUR!','W':'🎯 WICKET!','0':'● DOT','1':'1 RUN','2':'2 RUNS'};
+  evtEl.textContent = labels[evt] || evt + ' RUNS';
+}
+
+const seq = ['1','4','0','6','1','2','W','4','0','6','1','3','4','6'];
+let si = 0;
+setInterval(() => triggerMiniEvent(seq[si++ % seq.length]), 3500);
+
+function renderMatches(matches) {
+  if (!matches || !matches.length) return false;
+  document.getElementById('matches-list').innerHTML = matches.map(m => `
+    <a href="/scorecard/${m.id}/" class="match-list-card ${m.is_live ? 'live' : ''}">
+      <div><span class="mlc-status ${m.is_live ? 'mlc-live' : 'mlc-done'}">${m.is_live ? 'LIVE' : 'DONE'}</span>${m.league === 'IPL' ? '<span class="mlc-ipl">IPL</span>' : ''}</div>
+      <div style="flex:1;">
+        <div class="mlc-title">${m.title}</div>
+        <div class="mlc-status-text">${m.status}</div>
+        <div class="mlc-scores">${(m.scores || []).join(' | ')}</div>
+      </div>
+      <div style="color:#9ca3af;">→</div>
+    </a>`).join('');
+  return true;
+}
+
+const NEXT_IPL = {
+  label: "{{ next_ipl.label }}",
+  days_to_go: {{ next_ipl.days_to_go }}
+};
+
+function updateIplBanner(hasLiveIpl) {
+  const b = document.getElementById('ipl-banner');
+  document.getElementById('ib-emoji').textContent = hasLiveIpl ? '🏆' : '📅';
+  document.getElementById('ib-title').textContent = hasLiveIpl
+    ? '🏏 IPL match is LIVE right now!'
+    : 'No live IPL match right now';
+  document.getElementById('ib-sub').textContent = hasLiveIpl
+    ? 'Catch every ball below 👇'
+    : `${NEXT_IPL.label}${NEXT_IPL.days_to_go ? ` — just ${NEXT_IPL.days_to_go} days to go! 🏏` : ''} Meanwhile, enjoy other live cricket 👇`;
+  b.classList.toggle('off', !hasLiveIpl);
+}
+
+async function refreshMatches() {
+  const btn = document.querySelector('.refresh-btn');
+  const icon = document.getElementById('refresh-icon');
+  icon.style.animation = 'spin 0.8s linear infinite';
+  btn.disabled = true;
+  try {
+    const r = await fetch('/scorecard/api/live/');
+    if (r.status === 429) { showToast('Easy champ — scores auto-refresh already! ⏳'); return; }
+    const d = await r.json();
+    if (renderMatches(d.matches)) {
+      updateIplBanner(!!d.has_live_ipl);
+      showToast('Matches updated! 🏏');
+    }
+  } catch (e) { showToast('Could not refresh — check connection'); }
+  icon.style.animation = '';
+  btn.disabled = false;
+}
+</script>
+<script src="{% static 'js/live.js' %}"></script>
+<script>
+// Real-time push: WebSocket /ws/live/ (falls back to polling on serverless)
+if (window.FZLive) {
+  const pill = document.getElementById('live-feed-pill');
+  FZLive.connect(function (d) {
+    if (renderMatches(d.matches)) {
+      const iplLive = (d.matches || []).some(m => m.is_live && m.league === 'IPL');
+      pill.textContent = (iplLive ? '🏏 IPL LIVE — ' : '⚡ live feed: updated ') + new Date().toLocaleTimeString();
+      pill.style.color = iplLive ? '#d4af37' : '#059669';
+      updateIplBanner(iplLive);
+    }
+  });
+  setTimeout(() => { if (pill.textContent.includes('connecting')) pill.textContent = '⚡ live feed: polling every 45s'; }, 6000);
+}
+</script>
+{% endblock %}
